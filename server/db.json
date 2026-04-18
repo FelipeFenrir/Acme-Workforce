@@ -1,0 +1,94 @@
+{
+  "perguntas": [
+    {
+      "id": "idade_cliente",
+      "label": "Qual a idade ?",
+      "codigoVenda": "saude",
+      "type": "perguntaNode"
+    }
+  ],
+  "questionarios": [
+    {
+      "id": "saude_venda_avulsa",
+      "nome": "Questionario do Saude Avulso",
+      "type": "quizNode"
+    },
+    {
+      "id": "vg_venda_avulsa",
+      "nome": "Vida Global Avulso",
+      "type": "quizNode"
+    }
+  ],
+  "vinculos": [
+    {
+      "quizId": "saude_venda_avulsa",
+      "connections": [
+        {
+          "source": "saude_venda_avulsa",
+          "target": "node_idade_cliente_1775922010792_0"
+        }
+      ],
+      "nodeIds": [
+        "saude_venda_avulsa",
+        "idade_cliente"
+      ],
+      "id": 1
+    },
+    {
+      "quizId": "vg_venda_avulsa",
+      "connections": [
+        {
+          "source": "vg_venda_avulsa",
+          "target": "node_idade_cliente_1775922929057_0"
+        }
+      ],
+      "nodeIds": [
+        "vg_venda_avulsa",
+        "idade_cliente"
+      ],
+      "id": 2
+    }
+  ],
+  "layout_designer": [
+    {
+      "quizId": "saude_venda_avulsa",
+      "nodes": [
+        {
+          "id": "saude_venda_avulsa",
+          "position": {
+            "x": 254.66504493033483,
+            "y": -24.098719152068227
+          }
+        },
+        {
+          "id": "node_idade_cliente_1775922010792_0",
+          "position": {
+            "x": 111.96107832803722,
+            "y": 163.55019112061711
+          }
+        }
+      ],
+      "id": 1
+    },
+    {
+      "quizId": "vg_venda_avulsa",
+      "nodes": [
+        {
+          "id": "vg_venda_avulsa",
+          "position": {
+            "x": 286,
+            "y": 3
+          }
+        },
+        {
+          "id": "node_idade_cliente_1775922929057_0",
+          "position": {
+            "x": 173.51779774681552,
+            "y": 220.48386534235044
+          }
+        }
+      ],
+      "id": 2
+    }
+  ]
+}

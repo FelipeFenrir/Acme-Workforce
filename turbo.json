@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build",
+  "globalPassThroughEnv": [
+    "VITE_PORT_SHELL",
+    "VITE_PORT_QUESTIONS",
+    "VITE_PORT_QUESTIONNAIRE",
+    "VITE_PORT_ORDER",
+    "VITE_URL_QUESTIONS",
+    "VITE_URL_QUESTIONNAIRE",
+    "VITE_URL_ORDER"
+  ],
+  "tasks": {
+    "dev": { 
+      "cache": false, 
+      "persistent": true 
+    },
+    "build": { 
+      "outputs": ["dist/**"],
+      "dependsOn": ["^build"]
+    }
+  }
+}
