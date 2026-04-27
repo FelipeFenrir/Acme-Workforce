@@ -50,9 +50,9 @@ export default function App() {
   const Skeleton = () => (
     <div className="space-y-3">
       {[1, 2, 3].map(i => (
-        <div key={i} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-2xl flex justify-between items-center animate-pulse">
-          <div className="space-y-2 w-1/2"><div className="h-4 bg-zinc-800 rounded w-3/4" /><div className="h-3 bg-zinc-800 rounded w-1/4" /></div>
-          <div className="h-8 w-16 bg-zinc-800 rounded-lg" />
+        <div key={i} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center animate-pulse">
+          <div className="space-y-2 w-1/2"><div className="h-4 bg-zinc-800 rounded-none w-3/4" /><div className="h-3 bg-zinc-800 rounded-none w-1/4" /></div>
+          <div className="h-8 w-16 bg-zinc-800 rounded-none" />
         </div>
       ))}
     </div>
@@ -62,12 +62,12 @@ export default function App() {
     <div className="p-8 bg-zinc-950 text-white min-h-screen font-sans">
       <header className="flex justify-between items-center mb-10 border-b border-zinc-900 pb-6">
         <div>
-          <h2 className="text-2xl font-black text-blue-500 tracking-tighter uppercase">Questões</h2>
+          <h2 className="text-2xl font-black text-zinc-100 tracking-tighter uppercase">Questões</h2>
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">Database Management</p>
         </div>
-        <div className="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
-          <button onClick={() => setAbaAtiva('lista')} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${abaAtiva === 'lista' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>Questões Ativas</button>
-          <button onClick={() => { setAbaAtiva('form'); setEditingId(null); setForm({label:'', id:'', codigo:''}); }} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${abaAtiva === 'form' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}>{editingId ? 'Editando' : 'Nova Questão'}</button>
+        <div className="flex gap-1 bg-zinc-900 p-1 rounded-none border border-zinc-800">
+          <button onClick={() => setAbaAtiva('lista')} className={`px-6 py-2 rounded-none text-xs font-bold transition-all ${abaAtiva === 'lista' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Questões Ativas</button>
+          <button onClick={() => { setAbaAtiva('form'); setEditingId(null); setForm({label:'', id:'', codigo:''}); }} className={`px-6 py-2 rounded-none text-xs font-bold transition-all ${abaAtiva === 'form' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>{editingId ? 'Editando' : 'Nova Questão'}</button>
         </div>
       </header>
 
@@ -78,7 +78,7 @@ export default function App() {
               {isLoading ? <Skeleton /> : (
                 <div className="space-y-3">
                   {list.map(q => (
-                    <div key={q.id} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-2xl flex justify-between items-center group hover:border-blue-500/40 transition-all">
+                    <div key={q.id} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center group hover:border-blue-500/40 transition-all">
                       <div>
                         <h3 className="font-bold text-zinc-200">{q.label}</h3>
                         <div className="flex gap-3 mt-1 text-[10px] font-mono text-zinc-500"><span className="text-blue-500">{q.id}</span>{q.codigoVenda && <span>| SKU: {q.codigoVenda}</span>}</div>
@@ -94,12 +94,12 @@ export default function App() {
               )}
             </motion.div>
           ) : (
-            <motion.div key="form" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="max-w-md mx-auto space-y-4 bg-zinc-900 p-10 rounded-[2.5rem] border border-zinc-800 shadow-2xl">
+            <motion.div key="form" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="max-w-md mx-auto space-y-4 bg-zinc-900 p-10 rounded-none border border-zinc-800">
               <div className="text-center mb-6"><h3 className="text-xl font-bold">{editingId ? 'Atualizar Pergunta' : 'Nova Pergunta'}</h3><p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Preencha os campos abaixo</p></div>
-              <input placeholder="ID Único" disabled={!!editingId} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-2xl font-mono text-sm focus:border-blue-600 outline-none disabled:opacity-30" value={form.id} onChange={e => setForm({...form, id: e.target.value})} />
-              <input placeholder="Título / Pergunta" className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-2xl text-sm focus:border-blue-600 outline-none" value={form.label} onChange={e => setForm({...form, label: e.target.value})} />
-              <input placeholder="Código de Venda" className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-2xl text-sm focus:border-blue-600 outline-none" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} />
-              <button onClick={salvar} className="w-full bg-blue-600 p-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-900/20">{editingId ? 'Salvar Alterações' : 'Salvar na API'}</button>
+              <input placeholder="ID Único" disabled={!!editingId} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-none font-mono text-sm focus:border-blue-600 outline-none disabled:opacity-30" value={form.id} onChange={e => setForm({...form, id: e.target.value})} />
+              <input placeholder="Título / Pergunta" className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-none text-sm focus:border-blue-600 outline-none" value={form.label} onChange={e => setForm({...form, label: e.target.value})} />
+              <input placeholder="Código de Venda" className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-none text-sm focus:border-blue-600 outline-none" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} />
+              <button onClick={salvar} className="w-full bg-blue-600 p-4 rounded-none font-black uppercase tracking-widest">{editingId ? 'Salvar Alterações' : 'Salvar na API'}</button>
             </motion.div>
           )}
         </AnimatePresence>

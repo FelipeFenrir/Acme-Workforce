@@ -4,7 +4,7 @@ import 'reactflow/dist/style.css';
 import { dataService } from 'shared-data';
 import { CustomNode } from './components/CustomNode';
 import dagre from '@dagrejs/dagre';
-import { Search, Plus, Check, Trash2, LayoutGrid } from 'lucide-react';
+import { Search, Plus, Check, Trash2, LayoutGrid, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const nodeTypes = { perguntaNode: CustomNode, quizNode: CustomNode };
@@ -19,6 +19,8 @@ export default function App() {
   const [termoBuscaBiblioteca, setTermoBuscaBiblioteca] = useState("");
   const [selecionadas, setSelecionadas] = useState([]);
   const [quizAtivo, setQuizAtivo] = useState(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   const carregarBiblioteca = useCallback(async () => {
     try {
@@ -78,15 +80,22 @@ export default function App() {
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
   const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)), []);
 
-  const buscarQuestionario = async () => {
+  const abrirModalBusca = async () => {
     try {
-      const [quizes, perguntasAtuais] = await Promise.all([
-        dataService.getQuestionarios(),
-        dataService.getPerguntas()
-      ]);
-      const quiz = quizes.find(q => q.id === busca || q.nome.includes(busca));
-      if (!quiz) return alert("Questionário não encontrado.");
+      const quizes = await dataService.getQuestionarios();
+      const filtrados = busca.trim() 
+        ? quizes.filter(q => q.id.includes(busca) || q.nome.toLowerCase().includes(busca.toLowerCase())) 
+        : quizes;
+      setSearchResults(filtrados);
+      setIsSearchModalOpen(true);
+    } catch (err) { alert("Erro ao buscar questionários."); }
+  };
+
+  const carregarFluxoQuestionario = async (quiz) => {
+    try {
       setQuizAtivo(quiz);
+      setIsSearchModalOpen(false);
+      const perguntasAtuais = await dataService.getPerguntas();
 
       const [vincRes, layoutRes] = await Promise.all([
         dataService.getVinculos(quiz.id),
@@ -141,27 +150,30 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-white">
-      <header className="p-4 bg-zinc-900 border-b border-zinc-800 flex gap-4 items-center shadow-lg">
+      <header className="p-4 bg-zinc-900 border-b border-zinc-800 flex gap-4 items-center">
         <div className="flex items-center gap-2 mr-4">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-none bg-blue-600 animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Designer Flow</span>
         </div>
         
-        <div className="relative">
-           <Search size={14} className="absolute left-3 top-2.5 text-zinc-600" />
+        <div className="relative flex items-center">
+           <Search size={14} className="absolute left-3 text-zinc-600" />
            <input 
-            className="bg-zinc-950 border border-zinc-800 p-2 pl-9 rounded-lg text-xs w-64 focus:border-blue-600 outline-none transition-all" 
-            placeholder="Buscar ID ou Nome do Questionário..." 
+            className="bg-zinc-950 border border-zinc-800 p-2 pl-9 rounded-none text-xs w-64 focus:border-blue-600 outline-none transition-all" 
+            placeholder="Buscar Questionário..." 
             value={busca} onChange={e => setBusca(e.target.value)} 
-            onKeyDown={e => e.key === 'Enter' && buscarQuestionario()}
+            onKeyDown={e => e.key === 'Enter' && abrirModalBusca()}
           />
+          <button onClick={abrirModalBusca} className="bg-blue-600 hover:bg-blue-500 px-4 h-full py-2 ml-1 rounded-none text-[10px] font-black uppercase">
+            Buscar
+          </button>
         </div>
 
-        {quizAtivo && <span className="text-[10px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1.5 rounded-full font-bold uppercase">Ativo: {quizAtivo.nome}</span>}
+        {quizAtivo && <span className="text-[10px] bg-blue-600/10 text-blue-500 border border-blue-500/20 px-3 py-1.5 rounded-none font-bold uppercase">Ativo: {quizAtivo.nome}</span>}
 
         <div className="ml-auto flex gap-2">
-          <button onClick={() => setNodes(aplicarAutoLayout(nodes, edges))} className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-lg text-[10px] font-bold border border-zinc-700 uppercase">Organizar</button>
-          <button onClick={salvarTudo} className="bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg shadow-emerald-900/20">Salvar na API</button>
+          <button onClick={() => setNodes(aplicarAutoLayout(nodes, edges))} className="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-none text-[10px] font-bold border border-zinc-700 uppercase">Organizar</button>
+          <button onClick={salvarTudo} className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-none text-[10px] font-black uppercase">Salvar na API</button>
         </div>
       </header>
 
@@ -173,7 +185,7 @@ export default function App() {
             <div className="relative">
               <Search size={14} className="absolute left-3 top-3 text-zinc-600" />
               <input 
-                className="w-full bg-zinc-950 border border-zinc-800 p-3 pl-10 rounded-xl text-xs outline-none focus:border-blue-600"
+                className="w-full bg-zinc-950 border border-zinc-800 p-3 pl-10 rounded-none text-xs outline-none focus:border-blue-600"
                 placeholder="Consultar questões..."
                 value={termoBuscaBiblioteca}
                 onChange={e => setTermoBuscaBiblioteca(e.target.value)}
@@ -185,7 +197,7 @@ export default function App() {
                 <motion.button
                   initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                   onClick={adicionarSelecionadas}
-                  className="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-900/40 uppercase"
+                  className="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-none text-[10px] font-black flex items-center justify-center gap-2 uppercase"
                 >
                   Adicionar {selecionadas.length} selecionadas <Plus size={14} />
                 </motion.button>
@@ -198,10 +210,10 @@ export default function App() {
               <div 
                 key={p.id}
                 onClick={() => toggleSelecao(p.id)}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer group relative flex items-center gap-3
+                className={`p-4 rounded-none border transition-all cursor-pointer group relative flex items-center gap-3
                   ${selecionadas.includes(p.id) ? 'bg-blue-600/10 border-blue-600' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}
               >
-                <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all
+                <div className={`w-5 h-5 rounded-none border flex items-center justify-center transition-all
                   ${selecionadas.includes(p.id) ? 'bg-blue-600 border-blue-600' : 'bg-zinc-900 border-zinc-800'}`}>
                   {selecionadas.includes(p.id) && <Check size={12} strokeWidth={4} />}
                 </div>
@@ -219,6 +231,46 @@ export default function App() {
             <Background color="#18181b" gap={20} variant="dots" />
             <Controls className="bg-zinc-900 fill-white border-zinc-800" />
           </ReactFlow>
+
+          {/* Search Modal */}
+          <AnimatePresence>
+            {isSearchModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-zinc-950 border border-zinc-800 rounded-none w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]"
+                >
+                  <div className="flex justify-between items-center p-6 border-b border-zinc-800 bg-zinc-900">
+                    <div>
+                      <h2 className="text-lg font-black text-white uppercase">Selecionar Questionário</h2>
+                      <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase mt-1">Resultados da busca</p>
+                    </div>
+                    <button onClick={() => setIsSearchModalOpen(false)} className="text-zinc-500 hover:text-white p-2">
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    {searchResults.length === 0 ? (
+                      <p className="text-center text-zinc-500 text-xs py-8">Nenhum questionário encontrado.</p>
+                    ) : (
+                      searchResults.map(q => (
+                        <div 
+                          key={q.id} 
+                          onClick={() => carregarFluxoQuestionario(q)}
+                          className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-none cursor-pointer hover:bg-zinc-900 hover:border-blue-600 transition-all flex flex-col"
+                        >
+                          <span className="font-bold text-sm text-zinc-100">{q.nome}</span>
+                          <span className="text-[10px] font-mono text-zinc-500 mt-1 uppercase tracking-widest">ID: {q.id}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
         </main>
       </div>
     </div>
