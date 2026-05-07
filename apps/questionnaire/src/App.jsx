@@ -8,6 +8,11 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState('lista');
   const [isLoading, setIsLoading] = useState(true);
+  const [isFallback, setIsFallback] = useState(dataService.isFallbackActive);
+
+  useEffect(() => {
+    return dataService.subscribeToFallback(setIsFallback);
+  }, []);
 
   const carregar = async () => {
     setIsLoading(true);
@@ -90,11 +95,26 @@ export default function App() {
               <div className="text-center"><h3 className="text-xl font-bold">{isEditing ? 'Editar Questionário' : 'Novo Questionário'}</h3><p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Configurações de Coleta</p></div>
               <input placeholder="ID de Referência" disabled={isEditing} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-none font-mono text-sm focus:border-blue-600 outline-none disabled:opacity-30" value={form.id} onChange={e => setForm({...form, id: e.target.value})} />
               <input placeholder="Nome do Questionário" className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-none text-sm focus:border-blue-600 outline-none" value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} />
-              <button onClick={salvar} className="w-full bg-blue-600 p-4 rounded-none font-black uppercase tracking-widest">{isEditing ? 'Salvar Alterações' : 'Salvar na API'}</button>
+              <div className="flex gap-4">
+                <button onClick={() => { setAbaAtiva('lista'); setIsEditing(false); setForm({nome:'', id:''}); }} className="w-1/3 bg-zinc-800 p-4 rounded-none font-black uppercase tracking-widest hover:bg-zinc-700 transition-all text-xs">Cancelar</button>
+                <button onClick={salvar} className="flex-1 bg-blue-600 p-4 rounded-none font-black uppercase tracking-widest text-xs">{isEditing ? 'Salvar Alterações' : 'Salvar na API'}</button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      <AnimatePresence>
+        {isFallback && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
+            <span className="text-xl leading-none">⚠️</span>
+            <div>
+              <p className="uppercase tracking-widest text-[10px]">Modo de Fallback (Mock)</p>
+              <p className="font-normal opacity-90 text-[10px] mt-0.5">A API principal não está acessível.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

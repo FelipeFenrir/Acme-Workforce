@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
 
   // 2. Identifica qual porta usar baseado no nome da pasta ou em um fallback
   // Você pode usar uma lógica baseada no nome do app ou uma variável específica
-  const port = parseInt(env.VITE_PORT_QUESTIONNAIRE) || 3002;
+  const port = parseInt(env.VITE_PORT_QUESTIONNAIRE) || 9102;
 
   return {
     plugins: [react()],
@@ -27,6 +27,12 @@ export default defineConfig(({ mode }) => {
     server: {
       port: port,
       strictPort: true, // Garante que o app falhe se a porta estiver ocupada, evitando conflitos
+      proxy: {
+        '/api/v1': {
+          target: 'http://localhost:9005',
+          changeOrigin: true
+        }
+      }
     }
   };
 });

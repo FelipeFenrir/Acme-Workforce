@@ -29,7 +29,7 @@
             "name": "Debug Chrome: Shell",
             "type": "chrome",
             "request": "launch",
-            "url": "http://localhost:3000",
+            "url": "http://localhost:9100",
             "webRoot": "${workspaceFolder}/apps/shell",
             "sourceMapPathOverrides": {
                 "webpack:///src/*": "${webRoot}/src/*"
@@ -39,7 +39,7 @@
             "name": "Debug Edge: Shell",
             "type": "msedge",
             "request": "launch",
-            "url": "http://localhost:3000",
+            "url": "http://localhost:9100",
             "webRoot": "${workspaceFolder}/apps/shell",
             "sourceMapPathOverrides": {
                 "webpack:///src/*": "${webRoot}/src/*"
@@ -49,7 +49,10 @@
     "compounds": [
         {
             "name": "Start & Debug Shell (Chrome)",
-            "configurations": ["Start Shell Only (npm run dev:shell)", "Debug Chrome: Shell"]
+            "configurations": [
+                "Start Shell Only (npm run dev:shell)",
+                "Debug Chrome: Shell"
+            ]
         }
     ]
 }

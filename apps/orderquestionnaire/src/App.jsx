@@ -18,13 +18,19 @@ export default function App() {
   const [busca, setBusca] = useState("");
   const [termoBuscaBiblioteca, setTermoBuscaBiblioteca] = useState("");
   const [selecionadas, setSelecionadas] = useState([]);
+  const [abaAtiva, setAbaAtiva] = useState('lista');
+  const [isFallback, setIsFallback] = useState(dataService.isFallbackActive);
+
+  useEffect(() => {
+    return dataService.subscribeToFallback(setIsFallback);
+  }, []);
   const [quizAtivo, setQuizAtivo] = useState(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
 
   const carregarBiblioteca = useCallback(async () => {
     try {
-      const data = await dataService.getPerguntas();
+      const { data } = await dataService.getPerguntas();
       setPerguntas(data);
     } catch (err) { console.error("Erro na API", err); }
   }, []);
@@ -95,7 +101,7 @@ export default function App() {
     try {
       setQuizAtivo(quiz);
       setIsSearchModalOpen(false);
-      const perguntasAtuais = await dataService.getPerguntas();
+      const { data: perguntasAtuais } = await dataService.getPerguntas();
 
       const [vincRes, layoutRes] = await Promise.all([
         dataService.getVinculos(quiz.id),
@@ -273,6 +279,18 @@ export default function App() {
 
         </main>
       </div>
+
+      <AnimatePresence>
+        {isFallback && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
+            <span className="text-xl leading-none">⚠️</span>
+            <div>
+              <p className="uppercase tracking-widest text-[10px]">Modo de Fallback (Mock)</p>
+              <p className="font-normal opacity-90 text-[10px] mt-0.5">A API principal não está acessível.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

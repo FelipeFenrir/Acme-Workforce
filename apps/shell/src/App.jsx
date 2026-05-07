@@ -37,19 +37,19 @@ const CAPACIDADES = [
     mfes: [
       {
         id: 'questoes',
-        url: import.meta.env.VITE_URL_QUESTIONS || "http://localhost:3001",
+        url: import.meta.env.VITE_URL_QUESTIONS || "http://localhost:9101",
         label: "Questões",
         icon: <HelpCircle size={20} />
       },
       {
         id: 'questionarios',
-        url: import.meta.env.VITE_URL_QUESTIONNAIRE || "http://localhost:3002",
+        url: import.meta.env.VITE_URL_QUESTIONNAIRE || "http://localhost:9102",
         label: "Questionários",
         icon: <FileText size={20} />
       },
       {
         id: 'designer',
-        url: import.meta.env.VITE_URL_ORDER || "http://localhost:3003",
+        url: import.meta.env.VITE_URL_ORDER || "http://localhost:9103",
         label: "Designer de Fluxo",
         icon: <Share2 size={20} />
       }
@@ -147,9 +147,9 @@ export default function App() {
         {/* Hover state for border */}
         <div className={`w-full h-full ${cap.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
       </div>
-      
+
       {/* Inner Hexagon (Background) */}
-      <div 
+      <div
         className="absolute inset-[1px] bg-zinc-950 group-hover:bg-zinc-900 flex flex-col items-center text-center p-6 transition-all duration-300"
         style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
       >

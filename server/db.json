@@ -3,7 +3,22 @@
     {
       "id": "idade_cliente",
       "label": "Qual a idade ?",
-      "codigoVenda": "saude",
+      "salesItemReferenceCode": "saude",
+      "status": "ACTIVE",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "createdAt": "2026-05-06T00:00:00Z",
+      "updatedBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "updatedAt": "2026-05-06T00:00:00Z",
       "type": "perguntaNode"
     }
   ],

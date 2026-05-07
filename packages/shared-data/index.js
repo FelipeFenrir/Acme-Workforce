@@ -1,35 +1,116 @@
 const API_URL = "http://localhost:4000";
+const API_QUESTION_URL = "/api/v1/questions";
 
 export const dataService = {
-
-  getPerguntas: async () => {
-    const res = await fetch(`${API_URL}/perguntas`);
-    return res.json();
+  isFallbackActive: false,
+  fallbackListeners: [],
+  setFallbackActive: function(isActive) {
+    if (this.isFallbackActive !== isActive) {
+      this.isFallbackActive = isActive;
+      this.fallbackListeners.forEach(listener => listener(isActive));
+    }
+  },
+  subscribeToFallback: function(listener) {
+    this.fallbackListeners.push(listener);
+    listener(this.isFallbackActive);
+    return () => {
+      this.fallbackListeners = this.fallbackListeners.filter(l => l !== listener);
+    };
   },
 
-  getQuestionarios: async () => {
-    const res = await fetch(`${API_URL}/questionarios`);
-    return res.json();
+  getPerguntas: async function({ cursor = null, size = 10, filters = {}, sort = null } = {}) {
+    try {
+      const urlParams = new URLSearchParams();
+      urlParams.append('mode', 'CURSOR');
+      urlParams.append('size', size);
+      if (cursor) urlParams.append('cursor', cursor);
+
+      if (filters.buscaValor) {
+        if (filters.buscaTipo === 'ID') urlParams.append('ids', filters.buscaValor);
+        else urlParams.append('labelContains', filters.buscaValor);
+      }
+      if (filters.status && filters.status !== 'ALL') urlParams.append('status', filters.status);
+      if (sort) urlParams.append('sort', sort);
+
+      const res = await fetch(`${API_QUESTION_URL}?${urlParams.toString()}`);
+      if (!res.ok) throw new Error('Falha na API principal');
+      const response = await res.json(); // expected format: { data: [...], meta: { ... } }
+      response.data = response.data.map(q => ({ ...q, type: 'perguntaNode' }));
+      this.setFallbackActive(false);
+      return response;
+    } catch (err) {
+      console.warn("Fallback para json-server (db.json) em getPerguntas");
+      this.setFallbackActive(true);
+      const res = await fetch(`${API_URL}/perguntas`);
+      const data = await res.json();
+      const mappedData = data.map(q => ({ ...q, type: 'perguntaNode' }));
+      return { data: mappedData, meta: { hasNext: false, nextCursor: null } };
+    }
+  },
+
+  getQuestionarios: async function() {
+    try {
+      const res = await fetch(`${API_QUESTION_URL}/questionarios`); // Replace with actual API endpoint if exists, but currently json-server fallback URL is used
+      if (!res.ok) throw new Error();
+      this.setFallbackActive(false);
+      return res.json();
+    } catch (err) {
+      this.setFallbackActive(true);
+      const res = await fetch(`${API_URL}/questionarios`);
+      return res.json();
+    }
   },
 
   addPergunta: async (p) => {
-    return fetch(`${API_URL}/perguntas`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p)
-    });
+    try {
+      const res = await fetch(API_QUESTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+      });
+      if (!res.ok) throw new Error('Falha na API principal');
+      return await res.json();
+    } catch (err) {
+      console.warn("Fallback para json-server em addPergunta");
+      const res = await fetch(`${API_URL}/perguntas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+      });
+      return { data: await res.json() };
+    }
   },
 
   deletePergunta: async (id) => {
-    return fetch(`${API_URL}/perguntas/${id}`, { method: 'DELETE' });
+    try {
+      const res = await fetch(`${API_QUESTION_URL}/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Falha na API principal');
+      return await res.json();
+    } catch (err) {
+      console.warn("Fallback para json-server em deletePergunta");
+      const res = await fetch(`${API_URL}/perguntas/${id}`, { method: 'DELETE' });
+      return { data: { id, deleted: true } };
+    }
   },
 
   updatePergunta: async (id, dados) => {
-    return fetch(`${API_URL}/perguntas/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dados)
-    });
+    try {
+      const res = await fetch(`${API_QUESTION_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+      if (!res.ok) throw new Error('Falha na API principal');
+      return await res.json();
+    } catch (err) {
+      console.warn("Fallback para json-server em updatePergunta");
+      const res = await fetch(`${API_URL}/perguntas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      });
+      return { data: await res.json() };
+    }
   },
 
   addQuiz: async (quiz) => {
