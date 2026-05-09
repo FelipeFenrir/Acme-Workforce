@@ -2,6 +2,7 @@ import React from 'react';
 import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText } from 'lucide-react';
 import { Panel } from 'reactflow';
 import { motion } from 'framer-motion';
+import { updateNodeConfig } from '../core/use-cases/updateNodeConfig';
 
 export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   if (!node) return null;
@@ -13,46 +14,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   const config = isQuiz ? data : (data.config || { order: 0, answerConfig: { type: 'TEXT', attributes: {} }, rootCondition: null });
 
   const handleChange = (path, value) => {
-    let newData;
-    if (isQuiz) {
-      newData = { ...data };
-      const parts = path.split('.');
-      let current = newData;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) current[parts[i]] = {};
-        current = current[parts[i]];
-      }
-      current[parts[parts.length - 1]] = value;
-    } else {
-      const newConfig = JSON.parse(JSON.stringify(config));
-      const parts = path.split('.');
-      let current = newConfig;
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) current[parts[i]] = {};
-        current = current[parts[i]];
-      }
-
-      // Lógica especial ao mudar o TIPO da resposta ou condição
-      if (parts[parts.length - 1] === 'type') {
-        if (path.includes('Condition')) {
-          const type = value;
-          if (type === 'COMPOSITE') {
-            current.attributes = { operator: 'AND' };
-            current.children = current.children || [];
-          } else {
-            current.attributes = { questionRootCode: '', expectedValue: '', ...(type === 'NUMERIC' ? { operator: 'GREATER_THAN' } : {}) };
-            delete current.children;
-          }
-        } else if (path === 'answerConfig.type' && value === 'OPTION_LIST') {
-          // Inicializa answerOptions ao mudar para o tipo de lista
-          if (!current.attributes) current.attributes = {};
-          if (!current.attributes.answerOptions) current.attributes.answerOptions = [];
-        }
-      }
-
-      current[parts[parts.length - 1]] = value;
-      newData = { ...data, config: newConfig };
-    }
+    const newData = updateNodeConfig(node, path, value);
     onUpdate(node.id, newData);
   };
 

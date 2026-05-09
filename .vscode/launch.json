@@ -2,57 +2,136 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Start All Apps (npm run dev)",
+            "name": "🚀 Start All Apps (npm run dev)",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "dev"
-            ],
+            "runtimeArgs": ["run", "dev"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
         {
-            "name": "Start Shell Only (npm run dev:shell)",
+            "name": "🚧 Start All Apps [HOM] (Confirm Fallback)",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npm",
-            "runtimeArgs": [
-                "run",
-                "dev:shell"
-            ],
+            "runtimeArgs": ["run", "hom"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal"
         },
         {
-            "name": "Debug Chrome: Shell",
+            "name": "🚨 Start All Apps [PRD] (No Fallback)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "prd"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Shell (npm run dev:shell)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:shell"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Question (npm run dev:question)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:question"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Questionnaire (npm run dev:questionnaire)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:questionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Order Questionnaire (npm run dev:orderquestionnaire)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:orderquestionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🧪 Run All Tests (npm run test)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🧪 Vitest: Debug Current File",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": [
+                "node_modules/vitest/vitest.mjs",
+                "run",
+                "${relativeFile}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "🌐 Debug Chrome: Shell",
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:9100",
-            "webRoot": "${workspaceFolder}/apps/shell",
-            "sourceMapPathOverrides": {
-                "webpack:///src/*": "${webRoot}/src/*"
-            }
+            "webRoot": "${workspaceFolder}/apps/shell"
         },
         {
-            "name": "Debug Edge: Shell",
-            "type": "msedge",
+            "name": "🌐 Debug Chrome: Question",
+            "type": "chrome",
             "request": "launch",
-            "url": "http://localhost:9100",
-            "webRoot": "${workspaceFolder}/apps/shell",
-            "sourceMapPathOverrides": {
-                "webpack:///src/*": "${webRoot}/src/*"
-            }
+            "url": "http://localhost:9101",
+            "webRoot": "${workspaceFolder}/apps/question"
+        },
+        {
+            "name": "🌐 Debug Chrome: Questionnaire",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9102",
+            "webRoot": "${workspaceFolder}/apps/questionnaire"
+        },
+        {
+            "name": "🌐 Debug Chrome: Order Questionnaire",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9103",
+            "webRoot": "${workspaceFolder}/apps/orderquestionnaire"
         }
     ],
     "compounds": [
         {
-            "name": "Start & Debug Shell (Chrome)",
-            "configurations": [
-                "Start Shell Only (npm run dev:shell)",
-                "Debug Chrome: Shell"
-            ]
+            "name": "Start & Debug Shell",
+            "configurations": ["📦 Start Shell (npm run dev:shell)", "🌐 Debug Chrome: Shell"]
+        },
+        {
+            "name": "Start & Debug Question",
+            "configurations": ["📦 Start Question (npm run dev:question)", "🌐 Debug Chrome: Question"]
+        },
+        {
+            "name": "Start & Debug Questionnaire",
+            "configurations": ["📦 Start Questionnaire (npm run dev:questionnaire)", "🌐 Debug Chrome: Questionnaire"]
+        },
+        {
+            "name": "Start & Debug Order Questionnaire",
+            "configurations": ["📦 Start Order Questionnaire (npm run dev:orderquestionnaire)", "🌐 Debug Chrome: Order Questionnaire"]
         }
     ]
 }

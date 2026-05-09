@@ -14,7 +14,8 @@ const REQUIRED_VARS = [
   'VITE_PORT_ORDER',
   'VITE_URL_QUESTIONS',
   'VITE_URL_QUESTIONNAIRE',
-  'VITE_URL_ORDER'
+  'VITE_URL_ORDER',
+  'VITE_APP_ENV'
 ];
 
 console.log("🔍 Verificando variáveis de ambiente...");
