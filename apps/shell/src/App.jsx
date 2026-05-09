@@ -50,7 +50,7 @@ const CAPACIDADES = [
       {
         id: 'designer',
         url: import.meta.env.VITE_URL_ORDER || "http://localhost:9103",
-        label: "Designer de Fluxo",
+        label: "Designer de Questionário",
         icon: <Share2 size={20} />
       }
     ]
