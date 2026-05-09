@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    define: {
+      'import.meta.env.VITE_APP_ENV': JSON.stringify(env.VITE_APP_ENV || 'dev'),
+    },
     resolve: {
       alias: {
         'shared-data': path.resolve(__dirname, '../../packages/shared-data/index.js'),
@@ -33,6 +36,12 @@ export default defineConfig(({ mode }) => {
         }
       },
       strictPort: true, // Garante que o app falhe se a porta estiver ocupada, evitando conflitos
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: '../../vitest.setup.js',
+      css: true,
     }
   };
 });

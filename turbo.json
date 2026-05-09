@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turbo.build",
+  "$schema": "https://turbo.build/schema.json",
   "globalPassThroughEnv": [
     "VITE_PORT_SHELL",
     "VITE_PORT_QUESTIONS",
@@ -17,6 +17,9 @@
     "build": { 
       "outputs": ["dist/**"],
       "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": false
     }
   }
 }

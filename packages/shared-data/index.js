@@ -2,9 +2,9 @@ const API_URL = "http://localhost:4000";
 const API_QUESTION_URL = "/api/v1/questions";
 const API_QUIZ_URL = "/api/v1/questionnaires";
 
-// Detecta se estamos em ambiente de desenvolvimento
-const isDev = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port !== '');
+// Perfil de execução: dev, hom ou prd
+const APP_ENV = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_ENV) || 'dev';
+console.log(`[SharedData] Active Profile: ${APP_ENV}`);
 
 // Gerador simplificado de UUID v7 para rastreabilidade
 const generateUuidV7 = () => {
@@ -24,6 +24,19 @@ export const dataService = {
     headers['x-correlation-id'] = generateUuidV7();
     if (flowId) headers['x-flow-id'] = flowId;
     return headers;
+  },
+  requestFallback: async function(operation) {
+    if (this.isFallbackActive) return true;
+    if (APP_ENV === 'prd') return false;
+    if (APP_ENV === 'hom') {
+      const approved = typeof window !== 'undefined' && window.confirm(
+        `⚠️ BACKEND INDISPONÍVEL [PERFIL: HOM]\n\nFalha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`
+      );
+      if (approved) this.setFallbackActive(true);
+      return approved;
+    }
+    this.setFallbackActive(true); // dev (automatic)
+    return true; 
   },
   isFallbackActive: false,
   fallbackListeners: [],
@@ -88,7 +101,7 @@ export const dataService = {
     }
 
     // Silenciamos a notificação redundante (banner vermelho) se o fallback (banner amarelo) for ativado
-    if (!isRealBackendError && isDev) {
+    if (!isRealBackendError && APP_ENV !== 'prd') {
        return isRealBackendError;
     }
 
@@ -122,15 +135,15 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Listar Perguntas')) throw new TypeError('OFFLINE');
         throw new Error('Falha na API principal');
       }
-      const response = await res.json(); // expected format: { data: [...], meta: { ... } }
+      const response = await res.json();
       response.data = response.data.map(q => ({ ...q, type: 'perguntaNode' }));
       this.setFallbackActive(false);
       return response;
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         console.warn("Fallback para json-server (db.json) em getPerguntas (Servidor Offline)");
         this.setFallbackActive(true);
         const res = await fetch(`${API_URL}/perguntas`);
@@ -163,7 +176,7 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Listar Questionários')) throw new TypeError('OFFLINE');
         throw new Error('Falha na API principal');
       }
       const response = await res.json();
@@ -171,7 +184,7 @@ export const dataService = {
       this.setFallbackActive(false);
       return response;
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         console.warn("Fallback para json-server (db.json) em getQuestionarios (Servidor Offline)");
         const res = await fetch(`${API_URL}/questionarios`);
@@ -192,13 +205,13 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Adicionar Pergunta')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Questão adicionada com sucesso!');
       return await res.json();
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         console.warn("Fallback para json-server em addPergunta (Servidor Offline)");
         const res = await fetch(`${API_URL}/perguntas`, {
@@ -220,13 +233,13 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Remover Pergunta')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Questão removida com sucesso!');
       return await res.json();
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         console.warn("Fallback para json-server em deletePergunta (Servidor Offline)");
         const res = await fetch(`${API_URL}/perguntas/${id}`, { method: 'DELETE' });
@@ -245,13 +258,13 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Atualizar Pergunta')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Questão atualizada com sucesso!');
       return await res.json();
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         console.warn("Fallback para json-server em updatePergunta (Servidor Offline)");
         const res = await fetch(`${API_URL}/perguntas/${id}`, {
@@ -288,7 +301,7 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Criar Questionário')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Questionário criado com sucesso!');
@@ -297,7 +310,7 @@ export const dataService = {
       const data = response.data || response;
       return { ...data, nome: data.description, type: 'quizNode' };
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         console.warn("Fallback para json-server em addQuiz (Servidor Offline)");
         const res = await fetch(`${API_URL}/questionarios`, {
@@ -323,14 +336,14 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Buscar Questionário')) throw new TypeError('OFFLINE');
         return;
       }
       const response = await res.json();
       const data = response.data || response;
       return { ...data, nome: data.description, type: 'quizNode' };
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         const res = await fetch(`${API_URL}/questionarios/${id}`);
         if (!res.ok) throw new Error('Not found in fallback');
@@ -370,7 +383,7 @@ export const dataService = {
       });
       if (!res.ok) {
         const isReal = await this.notifyApiError(res);
-        if (isDev && !isReal) throw new TypeError('OFFLINE');
+        if (!isReal && await this.requestFallback('Sincronizar Designer')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Designer sincronizado com sucesso!');
@@ -379,9 +392,8 @@ export const dataService = {
       const data = response.data || response;
       return { ...data, nome: data.description, type: 'quizNode' };
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
-        // No update, o fallback apenas sinaliza mas não persiste o estado complexo no json-server (Offline)
         return { nome: q.nome, status: q.status };
       }
       throw err;
@@ -399,14 +411,15 @@ export const dataService = {
         headers: this.getHeaders(flowId)
       });
       if (!res.ok) {
-        await this.notifyApiError(res);
+        const isReal = await this.notifyApiError(res);
+        if (!isReal && await this.requestFallback('Remover Questionário')) throw new TypeError('OFFLINE');
         return;
       }
       this.notifyApiSuccess('Questionário removido com sucesso!');
       this.setFallbackActive(false);
       return res.json();
     } catch (err) {
-      if (isDev && err instanceof TypeError) {
+      if (err instanceof TypeError && err.message === 'OFFLINE') {
         this.setFallbackActive(true);
         const res = await fetch(`${API_URL}/questionarios/${id}`, { method: 'DELETE' });
         return res.json();
