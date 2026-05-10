@@ -12,7 +12,11 @@ export function CustomNode({ data, selected }) {
       ${isQuiz ? 'bg-zinc-900' : 'bg-zinc-950'}
     `}>
       {/* Indicador lateral */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 ${isQuiz ? 'bg-blue-600' : 'bg-zinc-700'}`} />
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+        isQuiz 
+          ? data.status === 'INACTIVE' ? 'bg-rose-600' : 'bg-blue-600'
+          : data.status === 'INACTIVE' ? 'bg-rose-800' : 'bg-zinc-700'
+      }`} />
 
       <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-zinc-700 !border-none !rounded-none" />
       
@@ -29,7 +33,11 @@ export function CustomNode({ data, selected }) {
             <h3 className="text-xs font-bold text-zinc-100 truncate">
               {isQuiz ? data.nome : data.label}
             </h3>
-            <span className={`text-[7px] font-black px-1 py-0.5 rounded-none border shrink-0 ${data.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700'}`}>
+            <span className={`text-[7px] font-black px-1 py-0.5 rounded-none border shrink-0 ${
+              data.status === 'ACTIVE'   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+              data.status === 'INACTIVE' ? 'bg-rose-500/10   text-rose-500   border-rose-500/20' :
+                                           'bg-zinc-800      text-zinc-500   border-zinc-700'
+            }`}>
               {data.status || 'DRAFT'}
             </span>
           </div>
