@@ -1,8 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText } from 'lucide-react';
 import { Panel } from 'reactflow';
 import { motion } from 'framer-motion';
 import { updateNodeConfig } from '../core/use-cases/updateNodeConfig';
+import { dataService } from 'shared-data';
+import { DESIGNER_FLOWS } from '../constants/flows';
 
 export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   if (!node) return null;
@@ -18,7 +20,34 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
     onUpdate(node.id, newData);
   };
 
-  // Helper para renderizar editor de condição (recursivo para COMPOSITE)
+  // Status rÃ¡pido: envia PUT isolado sÃ³ com o status, avisando sobre mudanÃ§as pendentes
+  const handleQuickStatusChange = async (newStatus) => {
+    const confirmed = window.confirm(
+      `âš ï¸ AtenÃ§Ã£o!\n\nQualquer alteraÃ§Ã£o nÃ£o salva neste painel serÃ¡ perdida.\n\nDeseja alterar o status para "${newStatus}" agora?`
+    );
+    if (!confirmed) return;
+
+    try {
+      if (isQuiz) {
+        await dataService.updateQuiz(
+          data.id,
+          { nome: data.nome, status: newStatus, questionsToUpsert: [], questionIdsToRemove: [] },
+          data.channelDistributionId,
+          data.journeyDistributionId,
+          DESIGNER_FLOWS.SYNC_DESIGN
+        );
+      } else {
+        await dataService.updatePergunta(data.id, { status: newStatus }, DESIGNER_FLOWS.SYNC_DESIGN);
+      }
+      // Atualiza o nÃ³ localmente apÃ³s confirmaÃ§Ã£o da API
+      const newData = updateNodeConfig(node, 'status', newStatus);
+      onUpdate(node.id, newData);
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+    }
+  };
+
+  // Helper para renderizar editor de condiÃ§Ã£o (recursivo para COMPOSITE)
   const renderConditionEditor = (condition, path = 'rootCondition') => {
     if (!condition) return null;
 
@@ -145,39 +174,56 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* Detalhes do Questionário */}
+       {/* Detalhes do QuestionÃ¡rio */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <FileText size={14} className="text-blue-500" /> Informações do Questionário
+            <FileText size={14} className="text-blue-500" /> InformaÃ§Ãµes do QuestionÃ¡rio
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4">
              <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">Descrição / Nome Exibição</p>
+                <p className="text-[9px] font-bold text-zinc-600 uppercase">DescriÃ§Ã£o / Nome ExibiÃ§Ã£o</p>
                 <input 
                   value={data.nome || ''} 
                   onChange={e => handleChange('nome', e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white outline-none focus:border-blue-600 transition-all"
                 />
              </div>
-             <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">Status do Fluxo</p>
-                <select 
-                  value={data.status || 'DRAFT'} 
-                  onChange={e => handleChange('status', e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white outline-none focus:border-blue-600 appearance-none"
-                >
-                  <option value="ACTIVE">ACTIVE (Em Produção)</option>
-                  <option value="DRAFT">DRAFT (Rascunho)</option>
-                  <option value="INACTIVE">INACTIVE (Desativado)</option>
-                </select>
-             </div>
+             <div className="space-y-3">
+                 <p className="text-[9px] font-bold text-zinc-600 uppercase">Status do Fluxo</p>
+                 <div className="flex items-center gap-3">
+                   <span className={`text-[8px] font-black px-2 py-1 border ${
+                     data.status === 'ACTIVE'   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                     data.status === 'INACTIVE' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                                  'bg-zinc-800 text-zinc-500 border-zinc-700'
+                   }`}>
+                     {data.status || 'DRAFT'}
+                   </span>
+                   <span className="text-[8px] text-zinc-600 uppercase tracking-wider">Status atual</span>
+                 </div>
+                 <div className="flex gap-2">
+                   {['ACTIVE', 'DRAFT', 'INACTIVE'].map(s => (
+                     <button
+                       key={s}
+                       onClick={() => handleQuickStatusChange(s)}
+                       disabled={data.status === s}
+                       className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest border transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                         s === 'ACTIVE'   ? 'border-emerald-700 text-emerald-500 hover:bg-emerald-500/10' :
+                         s === 'INACTIVE' ? 'border-rose-700 text-rose-500 hover:bg-rose-500/10' :
+                                            'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                       }`}
+                     >
+                       {s}
+                     </button>
+                   ))}
+                 </div>
+              </div>
           </div>
        </section>
 
-       {/* Distribuição */}
+       {/* DistribuiÃ§Ã£o */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Globe size={14} className="text-amber-500" /> Estratégia de Distribuição
+            <Globe size={14} className="text-amber-500" /> EstratÃ©gia de DistribuiÃ§Ã£o
           </label>
           <div className="grid grid-cols-1 gap-4 p-4 bg-zinc-900/30 border border-zinc-800">
              <div className="space-y-2">
@@ -190,14 +236,14 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
              </div>
           </div>
           <p className="text-[9px] text-zinc-600 italic px-2 leading-relaxed">
-            * A distribuição é imutável para esta instância. Para mudar o canal/jornada, crie um novo questionário.
+            * A distribuiÃ§Ã£o Ã© imutÃ¡vel para esta instÃ¢ncia. Para mudar o canal/jornada, crie um novo questionÃ¡rio.
           </p>
        </section>
 
        {/* Auditoria */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <User size={14} className="text-zinc-600" /> Auditoria de Criação
+            <User size={14} className="text-zinc-600" /> Auditoria de CriaÃ§Ã£o
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4 text-[10px]">
              <div className="flex justify-between items-center py-1 border-b border-zinc-800/50">
@@ -205,7 +251,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
                 <span className="font-bold text-zinc-300">{data.createdBy?.name || 'Sistema'}</span>
              </div>
              <div className="flex justify-between items-center py-1">
-                <span className="text-zinc-600">Data de Criação:</span>
+                <span className="text-zinc-600">Data de CriaÃ§Ã£o:</span>
                 <span className="font-mono text-zinc-400 flex items-center gap-1"><Clock size={10}/> {data.createdAt ? new Date(data.createdAt).toLocaleDateString() : 'N/A'}</span>
              </div>
           </div>
@@ -215,28 +261,53 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
 
   const renderQuestionPanel = () => (
     <div className="p-6 flex-1 overflow-y-auto space-y-8 custom-scrollbar">
-       {/* Resumo da Questão */}
+       {/* Resumo da QuestÃ£o */}
        <section className="space-y-3">
-          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">Questão Identificada</label>
-          <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-none flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-zinc-200">{data.label || 'Sem título'}</p>
-              <p className="text-[9px] font-mono text-zinc-600 mt-2 uppercase tracking-tighter">ID: {data.id}</p>
-            </div>
-            <div className={`text-[8px] font-black px-2 py-1 ${data.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}>
-              {data.status || 'DRAFT'}
-            </div>
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">QuestÃ£o Identificada</label>
+          <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-none">
+             <div className="flex items-start justify-between gap-3 mb-3">
+               <div>
+                 <p className="text-xs font-bold text-zinc-200">{data.label || 'Sem título'}</p>
+                 <p className="text-[9px] font-mono text-zinc-600 mt-2 uppercase tracking-tighter">ID: {data.id}</p>
+               </div>
+               <span className={`text-[8px] font-black px-2 py-1 shrink-0 border ${
+                 data.status === 'ACTIVE'   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                 data.status === 'INACTIVE' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                              'bg-zinc-800 text-zinc-500 border-zinc-700'
+               }`}>
+                 {data.status || 'DRAFT'}
+               </span>
+             </div>
+             <div className="pt-3 border-t border-zinc-800 space-y-2">
+               <p className="text-[9px] font-bold text-zinc-600 uppercase">Alterar Status</p>
+               <div className="flex gap-2">
+                 {['ACTIVE', 'DRAFT', 'INACTIVE'].map(s => (
+                   <button
+                     key={s}
+                     onClick={() => handleQuickStatusChange(s)}
+                     disabled={data.status === s}
+                     className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest border transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                       s === 'ACTIVE'   ? 'border-emerald-700 text-emerald-500 hover:bg-emerald-500/10' :
+                       s === 'INACTIVE' ? 'border-rose-700 text-rose-500 hover:bg-rose-500/10' :
+                                          'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                     }`}
+                   >
+                     {s}
+                   </button>
+                 ))}
+               </div>
+             </div>
           </div>
        </section>
 
        {/* Answer Config */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <FileJson size={14} className="text-blue-500" /> Configuração de Resposta
+            <FileJson size={14} className="text-blue-500" /> ConfiguraÃ§Ã£o de Resposta
           </label>
           <div className="space-y-4 p-4 bg-zinc-900/30 border border-zinc-800">
              <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">Estratégia de Validação (Type)</p>
+                <p className="text-[9px] font-bold text-zinc-600 uppercase">EstratÃ©gia de ValidaÃ§Ã£o (Type)</p>
                 <select 
                   value={config.answerConfig?.type || 'TEXT'}
                   onChange={(e) => handleChange('answerConfig.type', e.target.value)}
@@ -265,7 +336,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
 
              {config.answerConfig?.type === 'OPTION_LIST' && (
                 <div className="space-y-3 pt-2">
-                   <div className="flex justify-between items-center"><p className="text-[9px] font-bold text-zinc-600 uppercase">Opções</p><button onClick={() => {
+                   <div className="flex justify-between items-center"><p className="text-[9px] font-bold text-zinc-600 uppercase">OpÃ§Ãµes</p><button onClick={() => {
                       const options = config.answerConfig?.attributes?.answerOptions || [];
                       handleChange('answerConfig.attributes.answerOptions', [...options, { value: '', label: '' }]);
                    }} className="text-blue-500 text-[9px] font-black uppercase">+ ADD</button></div>
@@ -294,7 +365,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
                             }} 
                             onKeyDown={e => {
                               if (e.key === 'Tab' && !e.shiftKey && idx === (config.answerConfig.attributes.answerOptions.length - 1)) {
-                                // Se for o último campo de valor e apertar TAB, adiciona nova linha
+                                // Se for o Ãºltimo campo de valor e apertar TAB, adiciona nova linha
                                 const options = config.answerConfig.attributes.answerOptions || [];
                                 handleChange('answerConfig.attributes.answerOptions', [...options, { value: '', label: '' }]);
                               }
@@ -323,10 +394,10 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* Condições Compostas */}
+       {/* CondiÃ§Ãµes Compostas */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Zap size={14} className="text-amber-500" /> Lógica Condicional (Recursiva)
+            <Zap size={14} className="text-amber-500" /> LÃ³gica Condicional (Recursiva)
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4">
              <div className="flex items-center gap-3">
@@ -337,18 +408,18 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* Auditoria Vínculo */}
+       {/* Auditoria VÃ­nculo */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <ListOrdered size={14} className="text-zinc-600" /> Configuração do Vínculo
+            <ListOrdered size={14} className="text-zinc-600" /> ConfiguraÃ§Ã£o do VÃ­nculo
           </label>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
-                <p className="text-[8px] font-bold text-zinc-600 uppercase">Ordem de Exibição</p>
+                <p className="text-[8px] font-bold text-zinc-600 uppercase">Ordem de ExibiÃ§Ã£o</p>
                 <input type="number" value={config.order || 0} onChange={e => handleChange('order', parseInt(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs" />
              </div>
              <div className="space-y-1">
-                <p className="text-[8px] font-bold text-zinc-600 uppercase">Referência de Venda</p>
+                <p className="text-[8px] font-bold text-zinc-600 uppercase">ReferÃªncia de Venda</p>
                 <p className="p-3 bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-500 truncate">{data.salesItemReferenceCode || 'N/A'}</p>
              </div>
           </div>
@@ -369,10 +440,10 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
             </div>
             <div>
               <h3 className="text-[11px] font-black uppercase tracking-widest text-white">
-                {isQuiz ? 'Configuração Global' : 'Configuração do Vínculo'}
+                {isQuiz ? 'ConfiguraÃ§Ã£o Global' : 'ConfiguraÃ§Ã£o do VÃ­nculo'}
               </h3>
               <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">
-                {isQuiz ? 'Questionário de Domínio' : 'Lógica da Pergunta'}
+                {isQuiz ? 'QuestionÃ¡rio de DomÃ­nio' : 'LÃ³gica da Pergunta'}
               </p>
             </div>
           </div>
@@ -394,7 +465,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           )}
           {isQuiz && (
             <div className="flex-1 text-[9px] text-zinc-600 font-bold uppercase text-center py-4 border border-zinc-800 border-dashed">
-              Configurações de Instância Protegidas
+              ConfiguraÃ§Ãµes de InstÃ¢ncia Protegidas
             </div>
           )}
         </div>
