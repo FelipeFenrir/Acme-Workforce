@@ -12,7 +12,7 @@ export const QuestionnaireLookup = ({ isOpen, onClose, onSelect, initialSearch =
   const [hasNext, setHasNext] = useState(false);
   
   const [filters, setFilters] = useState({ 
-    buscaValor: initialSearch, 
+    buscaValor: '', 
     buscaTipo: 'NOME', 
     status: 'ALL', 
     channelId: '', 
@@ -20,13 +20,29 @@ export const QuestionnaireLookup = ({ isOpen, onClose, onSelect, initialSearch =
   });
   
   const [tempFilters, setTempFilters] = useState({ 
-    buscaValor: initialSearch, 
+    buscaValor: '', 
     buscaTipo: 'NOME', 
     status: 'ALL', 
     channelId: '', 
     journeyId: '' 
   });
   const observer = useRef();
+
+  // Sempre que o modal abre, reseta os filtros com o valor pré-digitado no header
+  useEffect(() => {
+    if (isOpen) {
+      const initial = {
+        buscaValor: initialSearch,
+        buscaTipo: 'NOME',
+        status: 'ALL',
+        channelId: '',
+        journeyId: ''
+      };
+      setFilters(initial);
+      setTempFilters(initial);
+      setList([]);
+    }
+  }, [isOpen, initialSearch]);
 
   const carregar = useCallback(async (cursor = null, append = false) => {
     if (!append) setIsLoading(true);
