@@ -149,6 +149,7 @@ export default function App() {
       };
 
       const qNodes = (quiz.configuredQuestions || []).map(cq => {
+        // Usa dados locais da biblioteca (já contém status atualizado)
         const pData = perguntas.find(p => p.id === cq.questionId) || { id: cq.questionId, label: 'Carregando...' };
         
         // Garantir que a configuração de resposta tenha a estrutura esperada pelo ConfigPanel
@@ -158,11 +159,14 @@ export default function App() {
         return {
           id: `node_${cq.questionId}`,
           type: 'perguntaNode',
-          data: { ...pData, config: { 
-            order: cq.order, 
-            answerConfig: safeAnswerConfig, 
-            rootCondition: cq.rootCondition 
-          }},
+          data: { 
+            ...pData,
+            config: { 
+              order: cq.order, 
+              answerConfig: safeAnswerConfig, 
+              rootCondition: cq.rootCondition 
+            }
+          },
           position: { x: 0, y: 0 }
         };
       });
@@ -492,6 +496,12 @@ export default function App() {
                   onUpdate={(id, newData) => {
                     updateNodeData(id, newData);
                     setSelectedNode(prev => ({ ...prev, data: newData }));
+                    // Atualiza o array de perguntas com o novo status
+                    if (selectedNode.type === 'perguntaNode' && newData.status) {
+                      setPerguntas(prev => prev.map(p => 
+                        p.id === selectedNode.data.id ? { ...p, status: newData.status } : p
+                      ));
+                    }
                   }} 
                   onDelete={deleteNode} 
                   onClose={() => setSelectedNode(null)} 

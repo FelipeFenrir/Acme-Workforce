@@ -1,13 +1,15 @@
-﻿import React from 'react';
-import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText, AlertTriangle } from 'lucide-react';
 import { Panel } from 'reactflow';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { updateNodeConfig } from '../core/use-cases/updateNodeConfig';
 import { dataService } from 'shared-data';
 import { DESIGNER_FLOWS } from '../constants/flows';
 
 export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   if (!node) return null;
+
+  const [pendingStatus, setPendingStatus] = useState(null);
 
   const isQuiz = node.type === 'quizNode';
   const data = node.data || {};
@@ -20,16 +22,18 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
     onUpdate(node.id, newData);
   };
 
-  // Status rÃ¡pido: envia PUT isolado sÃ³ com o status, avisando sobre mudanÃ§as pendentes
-  const handleQuickStatusChange = async (newStatus) => {
-    const confirmed = window.confirm(
-      `âš ï¸ AtenÃ§Ã£o!\n\nQualquer alteraÃ§Ã£o nÃ£o salva neste painel serÃ¡ perdida.\n\nDeseja alterar o status para "${newStatus}" agora?`
-    );
-    if (!confirmed) return;
+  const handleQuickStatusChange = (newStatus) => {
+    setPendingStatus(newStatus);
+  };
+
+  const confirmStatusChange = async () => {
+    const newStatus = pendingStatus;
+    setPendingStatus(null);
 
     try {
+      let result;
       if (isQuiz) {
-        await dataService.updateQuiz(
+        result = await dataService.updateQuiz(
           data.id,
           { nome: data.nome, status: newStatus, questionsToUpsert: [], questionIdsToRemove: [] },
           data.channelDistributionId,
@@ -37,17 +41,31 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           DESIGNER_FLOWS.SYNC_DESIGN
         );
       } else {
-        await dataService.updatePergunta(data.id, { status: newStatus }, DESIGNER_FLOWS.SYNC_DESIGN);
+        const payload = {
+          label: data.label,
+          status: newStatus,
+          salesItemReferenceCode: data.salesItemReferenceCode || '',
+          updatedBy: {
+            id: "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+            referenceCode: "sys-admin",
+            name: "Administrador",
+            email: "admin@acme.com"
+          }
+        };
+        result = await dataService.updatePergunta(data.id, payload, DESIGNER_FLOWS.SYNC_DESIGN);
       }
-      // Atualiza o nÃ³ localmente apÃ³s confirmaÃ§Ã£o da API
-      const newData = updateNodeConfig(node, 'status', newStatus);
-      onUpdate(node.id, newData);
+      if (result !== null && result !== undefined && result !== false) {
+        const newData = isQuiz 
+          ? updateNodeConfig(node, 'status', newStatus)
+          : { ...node.data, status: newStatus };
+        onUpdate(node.id, newData);
+      }
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
     }
   };
 
-  // Helper para renderizar editor de condiÃ§Ã£o (recursivo para COMPOSITE)
+  // Helper para renderizar editor de condição (recursivo para COMPOSITE)
   const renderConditionEditor = (condition, path = 'rootCondition') => {
     if (!condition) return null;
 
@@ -174,14 +192,14 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* Detalhes do QuestionÃ¡rio */}
+       {/* Detalhes do Questionário */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <FileText size={14} className="text-blue-500" /> InformaÃ§Ãµes do QuestionÃ¡rio
+            <FileText size={14} className="text-blue-500" /> Informações do Questionário
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4">
              <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">DescriÃ§Ã£o / Nome ExibiÃ§Ã£o</p>
+                <p className="text-[9px] font-bold text-zinc-600 uppercase">Descrição / Nome Exibição</p>
                 <input 
                   value={data.nome || ''} 
                   onChange={e => handleChange('nome', e.target.value)}
@@ -220,10 +238,10 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* DistribuiÃ§Ã£o */}
+       {/* Distribuição */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Globe size={14} className="text-amber-500" /> EstratÃ©gia de DistribuiÃ§Ã£o
+            <Globe size={14} className="text-amber-500" /> Estratégia de Distribuição
           </label>
           <div className="grid grid-cols-1 gap-4 p-4 bg-zinc-900/30 border border-zinc-800">
              <div className="space-y-2">
@@ -236,14 +254,14 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
              </div>
           </div>
           <p className="text-[9px] text-zinc-600 italic px-2 leading-relaxed">
-            * A distribuiÃ§Ã£o Ã© imutÃ¡vel para esta instÃ¢ncia. Para mudar o canal/jornada, crie um novo questionÃ¡rio.
+            * A distribuição é imutável para esta instância. Para mudar o canal/jornada, crie um novo questionário.
           </p>
        </section>
 
        {/* Auditoria */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <User size={14} className="text-zinc-600" /> Auditoria de CriaÃ§Ã£o
+            <User size={14} className="text-zinc-600" /> Auditoria de Criação
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4 text-[10px]">
              <div className="flex justify-between items-center py-1 border-b border-zinc-800/50">
@@ -251,7 +269,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
                 <span className="font-bold text-zinc-300">{data.createdBy?.name || 'Sistema'}</span>
              </div>
              <div className="flex justify-between items-center py-1">
-                <span className="text-zinc-600">Data de CriaÃ§Ã£o:</span>
+                <span className="text-zinc-600">Data de Criação:</span>
                 <span className="font-mono text-zinc-400 flex items-center gap-1"><Clock size={10}/> {data.createdAt ? new Date(data.createdAt).toLocaleDateString() : 'N/A'}</span>
              </div>
           </div>
@@ -261,9 +279,9 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
 
   const renderQuestionPanel = () => (
     <div className="p-6 flex-1 overflow-y-auto space-y-8 custom-scrollbar">
-       {/* Resumo da QuestÃ£o */}
+       {/* Resumo da Questão */}
        <section className="space-y-3">
-          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">QuestÃ£o Identificada</label>
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">Questão Identificada</label>
           <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-none">
              <div className="flex items-start justify-between gap-3 mb-3">
                <div>
@@ -303,11 +321,11 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
        {/* Answer Config */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <FileJson size={14} className="text-blue-500" /> ConfiguraÃ§Ã£o de Resposta
+            <FileJson size={14} className="text-blue-500" /> Configuração de Resposta
           </label>
           <div className="space-y-4 p-4 bg-zinc-900/30 border border-zinc-800">
              <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">EstratÃ©gia de ValidaÃ§Ã£o (Type)</p>
+                <p className="text-[9px] font-bold text-zinc-600 uppercase">Estratégia de Validação (Type)</p>
                 <select 
                   value={config.answerConfig?.type || 'TEXT'}
                   onChange={(e) => handleChange('answerConfig.type', e.target.value)}
@@ -336,7 +354,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
 
              {config.answerConfig?.type === 'OPTION_LIST' && (
                 <div className="space-y-3 pt-2">
-                   <div className="flex justify-between items-center"><p className="text-[9px] font-bold text-zinc-600 uppercase">OpÃ§Ãµes</p><button onClick={() => {
+                   <div className="flex justify-between items-center"><p className="text-[9px] font-bold text-zinc-600 uppercase">Opções</p><button onClick={() => {
                       const options = config.answerConfig?.attributes?.answerOptions || [];
                       handleChange('answerConfig.attributes.answerOptions', [...options, { value: '', label: '' }]);
                    }} className="text-blue-500 text-[9px] font-black uppercase">+ ADD</button></div>
@@ -365,7 +383,7 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
                             }} 
                             onKeyDown={e => {
                               if (e.key === 'Tab' && !e.shiftKey && idx === (config.answerConfig.attributes.answerOptions.length - 1)) {
-                                // Se for o Ãºltimo campo de valor e apertar TAB, adiciona nova linha
+                                // Se for o último campo de valor e apertar TAB, adiciona nova linha
                                 const options = config.answerConfig.attributes.answerOptions || [];
                                 handleChange('answerConfig.attributes.answerOptions', [...options, { value: '', label: '' }]);
                               }
@@ -394,10 +412,10 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* CondiÃ§Ãµes Compostas */}
+       {/* Condições Compostas */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Zap size={14} className="text-amber-500" /> LÃ³gica Condicional (Recursiva)
+            <Zap size={14} className="text-amber-500" /> Lógica Condicional (Recursiva)
           </label>
           <div className="p-4 bg-zinc-900/30 border border-zinc-800 space-y-4">
              <div className="flex items-center gap-3">
@@ -408,18 +426,18 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           </div>
        </section>
 
-       {/* Auditoria VÃ­nculo */}
+       {/* Auditoria Vínculo */}
        <section className="space-y-4">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <ListOrdered size={14} className="text-zinc-600" /> ConfiguraÃ§Ã£o do VÃ­nculo
+            <ListOrdered size={14} className="text-zinc-600" /> Configuração do Vínculo
           </label>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-1">
-                <p className="text-[8px] font-bold text-zinc-600 uppercase">Ordem de ExibiÃ§Ã£o</p>
+                <p className="text-[8px] font-bold text-zinc-600 uppercase">Ordem de Exibição</p>
                 <input type="number" value={config.order || 0} onChange={e => handleChange('order', parseInt(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs" />
              </div>
              <div className="space-y-1">
-                <p className="text-[8px] font-bold text-zinc-600 uppercase">ReferÃªncia de Venda</p>
+                <p className="text-[8px] font-bold text-zinc-600 uppercase">Referência de Venda</p>
                 <p className="p-3 bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-500 truncate">{data.salesItemReferenceCode || 'N/A'}</p>
              </div>
           </div>
@@ -440,10 +458,10 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
             </div>
             <div>
               <h3 className="text-[11px] font-black uppercase tracking-widest text-white">
-                {isQuiz ? 'ConfiguraÃ§Ã£o Global' : 'ConfiguraÃ§Ã£o do VÃ­nculo'}
+                {isQuiz ? 'Configuração Global' : 'Configuração do Vínculo'}
               </h3>
               <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1">
-                {isQuiz ? 'QuestionÃ¡rio de DomÃ­nio' : 'LÃ³gica da Pergunta'}
+                {isQuiz ? 'Questionário de Domínio' : 'Lógica da Pergunta'}
               </p>
             </div>
           </div>
@@ -465,11 +483,52 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           )}
           {isQuiz && (
             <div className="flex-1 text-[9px] text-zinc-600 font-bold uppercase text-center py-4 border border-zinc-800 border-dashed">
-              ConfiguraÃ§Ãµes de InstÃ¢ncia Protegidas
+              Configurações de Instância Protegidas
             </div>
           )}
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {pendingStatus && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6"
+            >
+              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-none flex items-center justify-center mx-auto border border-amber-500/20">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white">Alterar Status?</h4>
+                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest leading-relaxed">
+                  Qualquer alteração não salva neste painel será perdida.
+                </p>
+                <p className="text-xs text-blue-400 mt-3 font-bold">
+                  Status atual: <span className="uppercase">{data.status || 'DRAFT'}</span> → 
+                  <span className="uppercase"> {pendingStatus}</span>
+                </p>
+              </div>
+              <div className="flex gap-4 pt-2">
+                <button 
+                  onClick={() => setPendingStatus(null)} 
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmStatusChange} 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </Panel>
   );
 }
