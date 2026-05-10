@@ -360,14 +360,24 @@ export default function App() {
           </div>
         </div>
         
-        <div className="relative flex items-center group">
-           <Search size={14} className="absolute left-3 text-zinc-600 group-focus-within:text-blue-500 transition-all" />
-           <input 
-            className="bg-zinc-950 border border-zinc-800 p-2.5 pl-10 rounded-none text-xs w-72 focus:border-blue-600 outline-none transition-all placeholder:text-zinc-700 cursor-pointer" 
-            placeholder="Clique para buscar questionário..." 
-            readOnly
+        <div className="flex items-center gap-0">
+          <div className="relative flex items-center group">
+            <Search size={14} className="absolute left-3 text-zinc-600 group-focus-within:text-blue-500 transition-all" />
+            <input 
+              className="bg-zinc-950 border border-zinc-800 border-r-0 p-2.5 pl-10 rounded-none text-xs w-64 focus:border-blue-600 outline-none transition-all placeholder:text-zinc-700" 
+              placeholder="ID ou Nome do Questionário..." 
+              value={busca} 
+              onChange={e => setBusca(e.target.value)} 
+              onKeyDown={e => e.key === 'Enter' && setIsSearchModalOpen(true)}
+            />
+          </div>
+          <button
             onClick={() => setIsSearchModalOpen(true)}
-          />
+            className="bg-blue-600 hover:bg-blue-500 border border-blue-600 p-2.5 transition-all active:scale-95 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest"
+            title="Abrir consulta de questionários"
+          >
+            <LayoutGrid size={14} />
+          </button>
         </div>
 
         {quizAtivo && (
@@ -507,6 +517,7 @@ export default function App() {
               isOpen={isSearchModalOpen}
               onClose={() => setIsSearchModalOpen(false)}
               onSelect={carregarFluxoQuestionario}
+              initialSearch={busca}
             />
           </AnimatePresence>
         </main>

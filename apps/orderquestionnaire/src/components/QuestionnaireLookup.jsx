@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, ChevronRight, Filter } from 'lucide-react';
 import { DESIGNER_FLOWS } from '../constants/flows';
 
-export const QuestionnaireLookup = ({ isOpen, onClose, onSelect }) => {
+export const QuestionnaireLookup = ({ isOpen, onClose, onSelect, initialSearch = '' }) => {
   const [list, setList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -12,14 +12,20 @@ export const QuestionnaireLookup = ({ isOpen, onClose, onSelect }) => {
   const [hasNext, setHasNext] = useState(false);
   
   const [filters, setFilters] = useState({ 
-    buscaValor: '', 
+    buscaValor: initialSearch, 
     buscaTipo: 'NOME', 
     status: 'ALL', 
     channelId: '', 
     journeyId: '' 
   });
   
-  const [tempFilters, setTempFilters] = useState({ ...filters });
+  const [tempFilters, setTempFilters] = useState({ 
+    buscaValor: initialSearch, 
+    buscaTipo: 'NOME', 
+    status: 'ALL', 
+    channelId: '', 
+    journeyId: '' 
+  });
   const observer = useRef();
 
   const carregar = useCallback(async (cursor = null, append = false) => {
