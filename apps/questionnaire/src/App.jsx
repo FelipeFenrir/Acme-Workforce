@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { dataService } from 'shared-data';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QUIZ_FLOWS } from './constants/flows';
+import { FallbackDialog } from './components/modals/FallbackDialog';
+import { ErrorToast } from './components/modals/ErrorToast';
+import { FallbackBanner } from './components/modals/FallbackBanner';
+import { DeleteModal } from './components/modals/DeleteModal';
+import { VinculadoModal } from './components/modals/VinculadoModal';
+import { X } from 'lucide-react';
 
 export default function App() {
   const [list, setList] = useState([]);
@@ -10,6 +16,7 @@ export default function App() {
   const [abaAtiva, setAbaAtiva] = useState('lista');
   const [isLoading, setIsLoading] = useState(true);
   const [isFallback, setIsFallback] = useState(dataService.isFallbackActive);
+  const [fallbackDialog, setFallbackDialog] = useState(null);
 
   // Pagination states
   const [nextCursor, setNextCursor] = useState(null);
@@ -37,6 +44,17 @@ export default function App() {
     const unsubFallback = dataService.subscribeToFallback(setIsFallback);
     const unsubError = dataService.subscribeToApiError(setApiError);
     const unsubSuccess = dataService.subscribeToApiSuccess(setApiSuccess);
+
+    dataService.setDialogHandler((options) => {
+      return new Promise((resolve) => {
+        setFallbackDialog({ 
+          ...options, 
+          onConfirm: () => { setFallbackDialog(null); resolve(true); }, 
+          onCancel: () => { setFallbackDialog(null); resolve(false); } 
+        });
+      });
+    });
+
     return () => { unsubFallback(); unsubError(); unsubSuccess(); };
   }, []);
 
@@ -63,10 +81,12 @@ export default function App() {
         meta = response.meta || meta;
       }
 
+      const cleanData = (newData || []).filter(item => item && item.id);
+
       setList(prev => {
-        if (!append) return newData;
+        if (!append) return cleanData;
         const ids = new Set(prev.map(i => i.id));
-        const filteredNew = newData.filter(i => !ids.has(i.id));
+        const filteredNew = cleanData.filter(i => !ids.has(i.id));
         return [...prev, ...filteredNew];
       });
 
@@ -235,10 +255,12 @@ export default function App() {
               {isLoading && list.length === 0 ? <Skeleton /> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {list.map((quiz, index) => {
+                    const quizId = quiz?.id;
+                    const key = (quizId !== null && quizId !== undefined && quizId !== '') ? String(quizId) : `item-${index}`;
                     const statusColor = quiz.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : quiz.status === 'INACTIVE' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
                     const isLast = index === list.length - 1;
                     return (
-                      <div ref={isLast ? lastElementRef : null} key={quiz.id} className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center group hover:border-blue-500/40 transition-all">
+                      <div ref={isLast ? lastElementRef : null} key={key} className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center group hover:border-blue-500/40 transition-all">
                         <div className="flex-1 overflow-hidden pr-4">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-bold text-zinc-100 truncate">{quiz.nome}</h3>
@@ -321,7 +343,8 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <AnimatePresence>
+      {(apiSuccess || apiError || isFallback) && (
+        <AnimatePresence>
         {apiSuccess && (
           <motion.div key="success-toast" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="fixed top-24 right-6 bg-emerald-600 text-white px-6 py-4 shadow-2xl z-[100] border-l-4 border-emerald-400 flex items-center gap-4 max-w-md">
             <div className="bg-emerald-500 p-2"><span className="font-bold">✓</span></div>
@@ -352,7 +375,7 @@ export default function App() {
         )}
 
         {isFallback && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
+          <motion.div key="fallback-banner" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
             <span className="text-xl leading-none">⚠️</span>
             <div>
               <p className="uppercase tracking-widest text-[10px]">Modo de Fallback (Mock)</p>
@@ -361,39 +384,33 @@ export default function App() {
           </motion.div>
         )}
 
-        {isDeleteModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6">
-              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-none flex items-center justify-center mx-auto border border-red-500/20">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-              </div>
-              <div>
-                <h4 className="text-lg font-bold">Excluir Questionário?</h4>
-                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest">Esta ação não pode ser desfeita.</p>
-              </div>
-              <div className="flex gap-4 pt-2">
-                <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Cancelar</button>
-                <button onClick={confirmarExclusao} className="flex-1 bg-red-600 hover:bg-red-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Excluir</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
+        <DeleteModal 
+          key="delete-modal"
+          isOpen={isDeleteModalOpen} 
+          onClose={() => setIsDeleteModalOpen(false)} 
+          onConfirm={confirmarExclusao}
+          title="Excluir Questionário?"
+          message="Esta ação não pode ser desfeita."
+        />
 
-        {isVinculadoModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6">
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-none flex items-center justify-center mx-auto border border-amber-500/20">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-              </div>
-              <div>
-                <h4 className="text-lg font-bold">Item Vinculado</h4>
-                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest leading-relaxed">Este questionário possui vínculos ativos no Designer e não pode ser removido.</p>
-              </div>
-              <button onClick={() => setIsVinculadoModalOpen(false)} className="w-full bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Entendido</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        <VinculadoModal 
+          key="vinculado-modal"
+          isOpen={isVinculadoModalOpen} 
+          onClose={() => setIsVinculadoModalOpen(false)}
+          message="Este questionário possui vínculos ativos no Designer e não pode ser removido."
+        />
+
+        <FallbackDialog 
+          key="fallback-dialog"
+          fallbackDialog={fallbackDialog} 
+          onClose={() => setFallbackDialog(null)}
+          onConfirm={fallbackDialog?.onConfirm}
+        />
+
+        <ErrorToast apiError={apiError} onClose={() => setApiError(null)} />
+        <FallbackBanner isFallback={isFallback} />
+        </AnimatePresence>
+      )}
     </div>
   );
 }

@@ -25,13 +25,27 @@ export const dataService = {
     if (flowId) headers['x-flow-id'] = flowId;
     return headers;
   },
+  dialogHandler: null,
+  setDialogHandler: function(handler) {
+    this.dialogHandler = handler;
+  },
   requestFallback: async function(operation) {
     if (this.isFallbackActive) return true;
     if (APP_ENV === 'prd') return false;
     if (APP_ENV === 'hom') {
-      const approved = typeof window !== 'undefined' && window.confirm(
-        `⚠️ BACKEND INDISPONÍVEL [PERFIL: HOM]\n\nFalha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`
-      );
+      let approved = false;
+      if (this.dialogHandler) {
+        approved = await this.dialogHandler({
+          title: 'Backend Indisponível',
+          message: `Falha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`,
+          confirmText: 'Ativar Fallback',
+          cancelText: 'Cancelar'
+        });
+      } else if (typeof window !== 'undefined') {
+        approved = window.confirm(
+          `⚠️ BACKEND INDISPONÍVEL [PERFIL: HOM]\n\nFalha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`
+        );
+      }
       if (approved) this.setFallbackActive(true);
       return approved;
     }

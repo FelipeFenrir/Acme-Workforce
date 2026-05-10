@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { dataService } from 'shared-data';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QUESTION_FLOWS } from './constants/flows';
+import { FallbackDialog } from './components/modals/FallbackDialog';
+import { ErrorToast } from './components/modals/ErrorToast';
+import { FallbackBanner } from './components/modals/FallbackBanner';
+import { DeleteModal } from './components/modals/DeleteModal';
+import { VinculadoModal } from './components/modals/VinculadoModal';
+import { X } from 'lucide-react';
 
 export default function App() {
   const [list, setList] = useState([]);
@@ -17,6 +23,7 @@ export default function App() {
   const [buscaInput, setBuscaInput] = useState('');
   const [buscaTipo, setBuscaTipo] = useState('NOME');
   const [isFallback, setIsFallback] = useState(dataService.isFallbackActive);
+  const [fallbackDialog, setFallbackDialog] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isVinculadoModalOpen, setIsVinculadoModalOpen] = useState(false);
@@ -33,14 +40,17 @@ export default function App() {
         sort, 
         flowId: QUESTION_FLOWS.LIST 
       });
+      
+      const cleanData = (data || []).filter(item => item && item.id);
+      
       if (append) {
         setList(prev => {
-          const newIds = new Set(data.map(d => d.id));
+          const newIds = new Set(cleanData.map(d => d.id));
           const filteredPrev = prev.filter(p => !newIds.has(p.id));
-          return [...filteredPrev, ...data];
+          return [...filteredPrev, ...cleanData];
         });
       } else {
-        setList(data);
+        setList(cleanData);
       }
       setHasNext(meta?.hasNext || false);
       setNextCursor(meta?.nextCursor || null);
@@ -60,6 +70,17 @@ export default function App() {
     const unsubFallback = dataService.subscribeToFallback(setIsFallback);
     const unsubError = dataService.subscribeToApiError(setApiError);
     const unsubSuccess = dataService.subscribeToApiSuccess(setApiSuccess);
+
+    dataService.setDialogHandler((options) => {
+      return new Promise((resolve) => {
+        setFallbackDialog({ 
+          ...options, 
+          onConfirm: () => { setFallbackDialog(null); resolve(true); }, 
+          onCancel: () => { setFallbackDialog(null); resolve(false); } 
+        });
+      });
+    });
+
     return () => { unsubFallback(); unsubError(); unsubSuccess(); };
   }, []);
 
@@ -222,15 +243,18 @@ export default function App() {
 
               {isLoading ? <Skeleton /> : (
                 <div className="space-y-3">
-                  {list.map(q => (
-                    <div key={q.id} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center group hover:border-blue-500/40 transition-all">
+{list.map((q, idx) => {
+                    const qId = q?.id;
+                    const key = (qId !== null && qId !== undefined && qId !== '') ? String(qId) : `item-${idx}`;
+                    return (
+                    <div key={key} className="p-5 bg-zinc-900/40 border border-zinc-800 rounded-none flex justify-between items-center group hover:border-blue-500/40 transition-all">
                       <div>
                         <h3 className="font-bold text-zinc-200 flex items-center gap-2">
                           {q.label}
                           <span className={`text-[9px] px-2 py-0.5 font-bold uppercase tracking-widest border ${q.status === 'ACTIVE' ? 'bg-emerald-600/20 text-emerald-500 border-emerald-500/20' :
                             q.status === 'INACTIVE' ? 'bg-red-600/20 text-red-500 border-red-500/20' :
                               'bg-zinc-800 text-zinc-400 border-zinc-700'
-                            }`}>
+                          }`}>
                             {q.status || 'DRAFT'}
                           </span>
                         </h3>
@@ -241,7 +265,8 @@ export default function App() {
                         <button onClick={() => handleExcluirClick(q.id)} className="text-red-500 text-[10px] font-black uppercase hover:underline transition-all">Excluir</button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {list.length === 0 && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-20 px-4 text-center space-y-4">
                       <div className="text-5xl grayscale opacity-50 mb-2">🔎</div>
@@ -306,79 +331,76 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <AnimatePresence>
-        {apiSuccess && (
-          <motion.div key="success-toast" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="fixed top-24 right-6 bg-emerald-600 text-white px-6 py-4 shadow-2xl z-[100] border-l-4 border-emerald-400 flex items-center gap-4 max-w-md">
-            <div className="bg-emerald-500 p-2"><span className="font-bold">✓</span></div>
-            <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Sucesso</p>
-              <p className="text-xs font-bold mt-0.5">{apiSuccess.message}</p>
-            </div>
-            <button onClick={() => setApiSuccess(null)} className="opacity-50 hover:opacity-100 transition-all">✕</button>
-          </motion.div>
-        )}
+      {(apiSuccess || apiError || isFallback) && (
+        <AnimatePresence>
+          {apiSuccess && (
+            <motion.div key="success-toast" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="fixed top-24 right-6 bg-emerald-600 text-white px-6 py-4 shadow-2xl z-[100] border-l-4 border-emerald-400 flex items-center gap-4 max-w-md">
+              <div className="bg-emerald-500 p-2"><span className="font-bold">✓</span></div>
+              <div className="flex-1">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Sucesso</p>
+                <p className="text-xs font-bold mt-0.5">{apiSuccess.message}</p>
+              </div>
+              <button onClick={() => setApiSuccess(null)} className="opacity-50 hover:opacity-100 transition-all">✕</button>
+            </motion.div>
+          )}
 
-        {apiError && (
-          <motion.div key="error-toast" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="fixed top-24 right-6 bg-red-600 text-white px-6 py-4 shadow-2xl z-[100] border-l-4 border-red-400 flex items-center gap-4 max-w-md">
-            <div className="bg-red-500 p-2"><span className="font-bold">!</span></div>
-            <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-70">
-                {apiError.status >= 500 ? 'Erro de Servidor' : 'Falha de Validação'} ({apiError.status})
-              </p>
-              <p className="text-xs font-bold mt-0.5">{apiError.message}</p>
-              {apiError.detail && (
-                <p className="text-[10px] mt-2 p-2 bg-black/20 font-medium leading-relaxed border-l border-white/20">
-                  {apiError.detail}
+          {apiError && (
+            <motion.div key="error-toast" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="fixed top-24 right-6 bg-red-600 text-white px-6 py-4 shadow-2xl z-[100] border-l-4 border-red-400 flex items-center gap-4 max-w-md">
+              <div className="bg-red-500 p-2"><span className="font-bold">!</span></div>
+              <div className="flex-1">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                  {apiError.status >= 500 ? 'Erro de Servidor' : 'Falha de Validação'} ({apiError.status})
                 </p>
-              )}
-            </div>
-            <button onClick={() => setApiError(null)} className="opacity-50 hover:opacity-100 transition-all">✕</button>
-          </motion.div>
-        )}
-
-        {isFallback && (
-          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
-            <span className="text-xl leading-none">⚠️</span>
-            <div>
-              <p className="uppercase tracking-widest text-[10px]">Modo de Fallback (Mock)</p>
-              <p className="font-normal opacity-90 text-[10px] mt-0.5">A API principal não está acessível.</p>
-            </div>
-          </motion.div>
-        )}
-
-        {isDeleteModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6">
-              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-none flex items-center justify-center mx-auto border border-red-500/20">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <p className="text-xs font-bold mt-0.5">{apiError.message}</p>
+                {apiError.detail && (
+                  <p className="text-[10px] mt-2 p-2 bg-black/20 font-medium leading-relaxed border-l border-white/20">
+                    {apiError.detail}
+                  </p>
+                )}
               </div>
+              <button onClick={() => setApiError(null)} className="opacity-50 hover:opacity-100 transition-all">✕</button>
+            </motion.div>
+          )}
+
+          {isFallback && (
+            <motion.div key="fallback-banner" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }} className="fixed bottom-4 right-4 bg-amber-600/90 backdrop-blur text-white px-4 py-3 font-bold text-xs shadow-2xl flex items-center gap-3 z-50 rounded-none border border-amber-400">
+              <span className="text-xl leading-none">⚠️</span>
               <div>
-                <h4 className="text-lg font-bold">Excluir Questão?</h4>
-                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest">Esta ação não pode ser desfeita.</p>
-              </div>
-              <div className="flex gap-4 pt-2">
-                <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Cancelar</button>
-                <button onClick={confirmarExclusao} className="flex-1 bg-red-600 hover:bg-red-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Excluir</button>
+                <p className="uppercase tracking-widest text-[10px]">Modo de Fallback (Mock)</p>
+                <p className="font-normal opacity-90 text-[10px] mt-0.5">A API principal não está acessível.</p>
               </div>
             </motion.div>
-          </div>
+          )}
+        </AnimatePresence>
         )}
 
-        {isVinculadoModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6">
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-none flex items-center justify-center mx-auto border border-amber-500/20">
-                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-              </div>
-              <div>
-                <h4 className="text-lg font-bold">Item Vinculado</h4>
-                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest leading-relaxed">Esta pergunta está sendo usada em um fluxo ativo e não pode ser removida.</p>
-              </div>
-              <button onClick={() => setIsVinculadoModalOpen(false)} className="w-full bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all">Entendido</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        <>
+          {isDeleteModalOpen && <DeleteModal 
+            key="delete-modal"
+            isOpen={isDeleteModalOpen} 
+            onClose={() => setIsDeleteModalOpen(false)} 
+            onConfirm={confirmarExclusao}
+            title="Excluir Questão?"
+            message="Esta ação não pode ser desfeita."
+          />}
+
+          <VinculadoModal 
+            key="vinculado-modal"
+            isOpen={isVinculadoModalOpen} 
+            onClose={() => setIsVinculadoModalOpen(false)}
+            message="Esta pergunta está sendo usada em um fluxo ativo e não pode ser removida."
+          />
+
+          <FallbackDialog 
+            key="fallback-dialog"
+            fallbackDialog={fallbackDialog} 
+            onClose={() => setFallbackDialog(null)}
+            onConfirm={fallbackDialog?.onConfirm}
+          />
+
+          <ErrorToast apiError={apiError} onClose={() => setApiError(null)} />
+          <FallbackBanner isFallback={isFallback} />
+        </>
     </div>
   );
 }

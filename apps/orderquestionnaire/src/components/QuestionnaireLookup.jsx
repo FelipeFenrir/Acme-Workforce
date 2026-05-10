@@ -179,10 +179,12 @@ export const QuestionnaireLookup = ({ isOpen, onClose, onSelect, initialSearch =
             </div>
           ) : (
             list.map((q, index) => {
+              const qId = q?.id;
+              const key = (qId !== null && qId !== undefined && qId !== '') ? String(qId) : `item-${index}`;
               const statusColor = q.status === 'ACTIVE' ? 'text-emerald-500' : q.status === 'INACTIVE' ? 'text-rose-500' : 'text-zinc-500';
               return (
                 <div 
-                  key={q.id} 
+                  key={key} 
                   ref={index === list.length - 1 ? lastElementRef : null}
                   onClick={() => onSelect(q)}
                   className="p-6 bg-zinc-900/40 border border-zinc-800 rounded-none cursor-pointer hover:bg-blue-600/5 hover:border-blue-600 transition-all flex justify-between items-center group"
