@@ -1,11 +1,15 @@
-import React from 'react';
-import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { Settings, Trash2, ChevronRight, ListOrdered, FileJson, Zap, Plus, X, Calendar, Hash, Globe, Map, User, Clock, Check, Layers, FileText, AlertTriangle } from 'lucide-react';
 import { Panel } from 'reactflow';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { updateNodeConfig } from '../core/use-cases/updateNodeConfig';
+import { dataService } from 'shared-data';
+import { DESIGNER_FLOWS } from '../constants/flows';
 
 export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   if (!node) return null;
+
+  const [pendingStatus, setPendingStatus] = useState(null);
 
   const isQuiz = node.type === 'quizNode';
   const data = node.data || {};
@@ -16,6 +20,49 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
   const handleChange = (path, value) => {
     const newData = updateNodeConfig(node, path, value);
     onUpdate(node.id, newData);
+  };
+
+  const handleQuickStatusChange = (newStatus) => {
+    setPendingStatus(newStatus);
+  };
+
+  const confirmStatusChange = async () => {
+    const newStatus = pendingStatus;
+    setPendingStatus(null);
+
+    try {
+      let result;
+      if (isQuiz) {
+        result = await dataService.updateQuiz(
+          data.id,
+          { nome: data.nome, status: newStatus, questionsToUpsert: [], questionIdsToRemove: [] },
+          data.channelDistributionId,
+          data.journeyDistributionId,
+          DESIGNER_FLOWS.SYNC_DESIGN
+        );
+      } else {
+        const payload = {
+          label: data.label,
+          status: newStatus,
+          salesItemReferenceCode: data.salesItemReferenceCode || '',
+          updatedBy: {
+            id: "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+            referenceCode: "sys-admin",
+            name: "Administrador",
+            email: "admin@acme.com"
+          }
+        };
+        result = await dataService.updatePergunta(data.id, payload, DESIGNER_FLOWS.SYNC_DESIGN);
+      }
+      if (result !== null && result !== undefined && result !== false) {
+        const newData = isQuiz 
+          ? updateNodeConfig(node, 'status', newStatus)
+          : { ...node.data, status: newStatus };
+        onUpdate(node.id, newData);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+    }
   };
 
   // Helper para renderizar editor de condição (recursivo para COMPOSITE)
@@ -159,18 +206,35 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
                   className="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white outline-none focus:border-blue-600 transition-all"
                 />
              </div>
-             <div className="space-y-2">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase">Status do Fluxo</p>
-                <select 
-                  value={data.status || 'DRAFT'} 
-                  onChange={e => handleChange('status', e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white outline-none focus:border-blue-600 appearance-none"
-                >
-                  <option value="ACTIVE">ACTIVE (Em Produção)</option>
-                  <option value="DRAFT">DRAFT (Rascunho)</option>
-                  <option value="INACTIVE">INACTIVE (Desativado)</option>
-                </select>
-             </div>
+             <div className="space-y-3">
+                 <p className="text-[9px] font-bold text-zinc-600 uppercase">Status do Fluxo</p>
+                 <div className="flex items-center gap-3">
+                   <span className={`text-[8px] font-black px-2 py-1 border ${
+                     data.status === 'ACTIVE'   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                     data.status === 'INACTIVE' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                                  'bg-zinc-800 text-zinc-500 border-zinc-700'
+                   }`}>
+                     {data.status || 'DRAFT'}
+                   </span>
+                   <span className="text-[8px] text-zinc-600 uppercase tracking-wider">Status atual</span>
+                 </div>
+                 <div className="flex gap-2">
+                   {['ACTIVE', 'DRAFT', 'INACTIVE'].map(s => (
+                     <button
+                       key={s}
+                       onClick={() => handleQuickStatusChange(s)}
+                       disabled={data.status === s}
+                       className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest border transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                         s === 'ACTIVE'   ? 'border-emerald-700 text-emerald-500 hover:bg-emerald-500/10' :
+                         s === 'INACTIVE' ? 'border-rose-700 text-rose-500 hover:bg-rose-500/10' :
+                                            'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                       }`}
+                     >
+                       {s}
+                     </button>
+                   ))}
+                 </div>
+              </div>
           </div>
        </section>
 
@@ -218,14 +282,39 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
        {/* Resumo da Questão */}
        <section className="space-y-3">
           <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] block">Questão Identificada</label>
-          <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-none flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-zinc-200">{data.label || 'Sem título'}</p>
-              <p className="text-[9px] font-mono text-zinc-600 mt-2 uppercase tracking-tighter">ID: {data.id}</p>
-            </div>
-            <div className={`text-[8px] font-black px-2 py-1 ${data.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}>
-              {data.status || 'DRAFT'}
-            </div>
+          <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-none">
+             <div className="flex items-start justify-between gap-3 mb-3">
+               <div>
+                 <p className="text-xs font-bold text-zinc-200">{data.label || 'Sem título'}</p>
+                 <p className="text-[9px] font-mono text-zinc-600 mt-2 uppercase tracking-tighter">ID: {data.id}</p>
+               </div>
+               <span className={`text-[8px] font-black px-2 py-1 shrink-0 border ${
+                 data.status === 'ACTIVE'   ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                 data.status === 'INACTIVE' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                              'bg-zinc-800 text-zinc-500 border-zinc-700'
+               }`}>
+                 {data.status || 'DRAFT'}
+               </span>
+             </div>
+             <div className="pt-3 border-t border-zinc-800 space-y-2">
+               <p className="text-[9px] font-bold text-zinc-600 uppercase">Alterar Status</p>
+               <div className="flex gap-2">
+                 {['ACTIVE', 'DRAFT', 'INACTIVE'].map(s => (
+                   <button
+                     key={s}
+                     onClick={() => handleQuickStatusChange(s)}
+                     disabled={data.status === s}
+                     className={`flex-1 py-2 text-[8px] font-black uppercase tracking-widest border transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 ${
+                       s === 'ACTIVE'   ? 'border-emerald-700 text-emerald-500 hover:bg-emerald-500/10' :
+                       s === 'INACTIVE' ? 'border-rose-700 text-rose-500 hover:bg-rose-500/10' :
+                                          'border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                     }`}
+                   >
+                     {s}
+                   </button>
+                 ))}
+               </div>
+             </div>
           </div>
        </section>
 
@@ -399,6 +488,47 @@ export function ConfigPanel({ node, allNodes, onUpdate, onDelete, onClose }) {
           )}
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {pendingStatus && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }} 
+              className="bg-zinc-900 border border-zinc-800 p-8 max-w-sm w-full text-center space-y-6"
+            >
+              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-none flex items-center justify-center mx-auto border border-amber-500/20">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-white">Alterar Status?</h4>
+                <p className="text-xs text-zinc-500 mt-2 uppercase tracking-widest leading-relaxed">
+                  Qualquer alteração não salva neste painel será perdida.
+                </p>
+                <p className="text-xs text-blue-400 mt-3 font-bold">
+                  Status atual: <span className="uppercase">{data.status || 'DRAFT'}</span> → 
+                  <span className="uppercase"> {pendingStatus}</span>
+                </p>
+              </div>
+              <div className="flex gap-4 pt-2">
+                <button 
+                  onClick={() => setPendingStatus(null)} 
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmStatusChange} 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </Panel>
   );
 }

@@ -4,6 +4,7 @@ import 'reactflow/dist/style.css';
 import { dataService } from 'shared-data';
 import { CustomNode } from './components/CustomNode';
 import { ConfigPanel } from './components/ConfigPanel';
+import { QuestionnaireLookup } from './components/QuestionnaireLookup';
 import dagre from '@dagrejs/dagre';
 import { Search, Plus, Check, Trash2, LayoutGrid, X, Save, Layers, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,11 +24,18 @@ export default function App() {
   const [quizAtivo, setQuizAtivo] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
   const [isFallback, setIsFallback] = useState(dataService.isFallbackActive);
   const [originalQuestionIds, setOriginalQuestionIds] = useState([]);
   const [apiError, setApiError] = useState(null);
   const [apiSuccess, setApiSuccess] = useState(null);
+
+  // Pagination states for Questions (Library)
+  const [nextCursorQuestions, setNextCursorQuestions] = useState(null);
+  const [hasNextQuestions, setHasNextQuestions] = useState(false);
+  const [isFetchingMoreQuestions, setIsFetchingMoreQuestions] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [filtersQuestions, setFiltersQuestions] = useState({ buscaValor: '', buscaTipo: 'NOME' });
+  const observerQuestions = useRef();
 
   useEffect(() => {
     const unsubFallback = dataService.subscribeToFallback(setIsFallback);
@@ -43,23 +51,54 @@ export default function App() {
     }
   }, [apiSuccess]);
 
-  const carregarBiblioteca = useCallback(async () => {
+  const carregarBiblioteca = useCallback(async (cursor = null, append = false) => {
+    if (!append) setIsLoadingQuestions(true);
+    else setIsFetchingMoreQuestions(true);
+
     try {
-      const response = await dataService.getPerguntas({ flowId: DESIGNER_FLOWS.LIST_QUESTIONS });
-      setPerguntas(response.data || []);
-    } catch (err) { console.error("Erro na biblioteca", err); }
-  }, []);
+      const response = await dataService.getPerguntas({ 
+        cursor, 
+        size: 15, 
+        filters: filtersQuestions,
+        flowId: DESIGNER_FLOWS.LIST_QUESTIONS 
+      });
+
+      let newData = response.data || [];
+      let meta = response.meta || { hasNext: false, nextCursor: null };
+
+      setPerguntas(prev => {
+        if (!append) return newData;
+        const ids = new Set(prev.map(i => i.id));
+        const filteredNew = newData.filter(i => !ids.has(i.id));
+        return [...prev, ...filteredNew];
+      });
+
+      setHasNextQuestions(meta.hasNext);
+      setNextCursorQuestions(meta.nextCursor);
+    } catch (err) { 
+      console.error("Erro na biblioteca", err); 
+    } finally {
+      setIsLoadingQuestions(false);
+      setIsFetchingMoreQuestions(false);
+    }
+  }, [filtersQuestions]);
 
   useEffect(() => {
     carregarBiblioteca();
   }, [carregarBiblioteca]);
 
-  const perguntasFiltradas = useMemo(() => {
-    return perguntas.filter(p => 
-      p.label.toLowerCase().includes(termoBuscaBiblioteca.toLowerCase()) ||
-      p.id.toLowerCase().includes(termoBuscaBiblioteca.toLowerCase())
-    );
-  }, [termoBuscaBiblioteca, perguntas]);
+  const lastQuestionElementRef = useCallback(node => {
+    if (isLoadingQuestions || isFetchingMoreQuestions) return;
+    if (observerQuestions.current) observerQuestions.current.disconnect();
+    observerQuestions.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasNextQuestions && nextCursorQuestions) {
+        carregarBiblioteca(nextCursorQuestions, true);
+      }
+    });
+    if (node) observerQuestions.current.observe(node);
+  }, [isLoadingQuestions, isFetchingMoreQuestions, hasNextQuestions, nextCursorQuestions, carregarBiblioteca]);
+
+  const perguntasFiltradas = perguntas;
 
   const aplicarAutoLayout = useCallback((nodesParaAjustar, edgesParaAjustar, direcao = 'TB') => {
     if (nodesParaAjustar.length === 0) return [];
@@ -86,17 +125,6 @@ export default function App() {
   const onEdgesChange = useCallback((chs) => setEdges((eds) => applyEdgeChanges(chs, eds)), []);
   const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)), []);
 
-  const abrirModalBusca = async () => {
-    try {
-      const response = await dataService.getQuestionarios({ flowId: DESIGNER_FLOWS.LOAD_DESIGN });
-      const quizes = response.data || response;
-      const filtrados = busca.trim() 
-        ? quizes.filter(q => q.id.includes(busca) || q.nome.toLowerCase().includes(busca.toLowerCase())) 
-        : quizes;
-      setSearchResults(filtrados);
-      setIsSearchModalOpen(true);
-    } catch (err) { alert("Erro ao buscar questionários."); }
-  };
 
   const carregarFluxoQuestionario = async (quizSummary) => {
     try {
@@ -121,6 +149,7 @@ export default function App() {
       };
 
       const qNodes = (quiz.configuredQuestions || []).map(cq => {
+        // Usa dados locais da biblioteca (já contém status atualizado)
         const pData = perguntas.find(p => p.id === cq.questionId) || { id: cq.questionId, label: 'Carregando...' };
         
         // Garantir que a configuração de resposta tenha a estrutura esperada pelo ConfigPanel
@@ -130,11 +159,14 @@ export default function App() {
         return {
           id: `node_${cq.questionId}`,
           type: 'perguntaNode',
-          data: { ...pData, config: { 
-            order: cq.order, 
-            answerConfig: safeAnswerConfig, 
-            rootCondition: cq.rootCondition 
-          }},
+          data: { 
+            ...pData,
+            config: { 
+              order: cq.order, 
+              answerConfig: safeAnswerConfig, 
+              rootCondition: cq.rootCondition 
+            }
+          },
           position: { x: 0, y: 0 }
         };
       });
@@ -332,14 +364,24 @@ export default function App() {
           </div>
         </div>
         
-        <div className="relative flex items-center group">
-           <Search size={14} className="absolute left-3 text-zinc-600 group-focus-within:text-blue-500 transition-all" />
-           <input 
-            className="bg-zinc-950 border border-zinc-800 p-2.5 pl-10 rounded-none text-xs w-72 focus:border-blue-600 outline-none transition-all placeholder:text-zinc-700" 
-            placeholder="ID ou Nome do Questionário..." 
-            value={busca} onChange={e => setBusca(e.target.value)} 
-            onKeyDown={e => e.key === 'Enter' && abrirModalBusca()}
-          />
+        <div className="flex items-center gap-0">
+          <div className="relative flex items-center group">
+            <Search size={14} className="absolute left-3 text-zinc-600 group-focus-within:text-blue-500 transition-all" />
+            <input 
+              className="bg-zinc-950 border border-zinc-800 border-r-0 p-2.5 pl-10 rounded-none text-xs w-64 focus:border-blue-600 outline-none transition-all placeholder:text-zinc-700" 
+              placeholder="ID ou Nome do Questionário..." 
+              value={busca} 
+              onChange={e => setBusca(e.target.value)} 
+              onKeyDown={e => e.key === 'Enter' && setIsSearchModalOpen(true)}
+            />
+          </div>
+          <button
+            onClick={() => setIsSearchModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-500 border border-blue-600 p-2.5 transition-all active:scale-95 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest"
+            title="Abrir consulta de questionários"
+          >
+            <LayoutGrid size={14} />
+          </button>
         </div>
 
         {quizAtivo && (
@@ -373,9 +415,10 @@ export default function App() {
               <Search size={14} className="absolute left-3 top-3.5 text-zinc-600" />
               <input 
                 className="w-full bg-zinc-950 border border-zinc-800 p-3.5 pl-10 rounded-none text-xs outline-none focus:border-blue-600 transition-all placeholder:text-zinc-700"
-                placeholder="Filtrar por label ou ID..."
+                placeholder="Pressione Enter para buscar..."
                 value={termoBuscaBiblioteca}
                 onChange={e => setTermoBuscaBiblioteca(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && setFiltersQuestions(f => ({ ...f, buscaValor: termoBuscaBiblioteca }))}
               />
             </div>
             
@@ -393,23 +436,39 @@ export default function App() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-zinc-900/50">
-            {perguntasFiltradas.map(p => (
-              <div 
-                key={p.id}
-                onClick={() => toggleSelecao(p.id)}
-                className={`p-4 rounded-none border transition-all cursor-pointer group flex items-center gap-4
-                  ${selecionadas.includes(p.id) ? 'bg-blue-600/10 border-blue-600' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600'}`}
-              >
-                <div className={`w-4 h-4 rounded-none border flex items-center justify-center transition-all
-                  ${selecionadas.includes(p.id) ? 'bg-blue-600 border-blue-600' : 'bg-zinc-900 border-zinc-800'}`}>
-                  {selecionadas.includes(p.id) && <Check size={10} strokeWidth={4} />}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-[11px] font-bold truncate text-zinc-200 group-hover:text-white">{p.label}</p>
-                  <p className="text-[9px] text-zinc-600 font-mono mt-1 uppercase tracking-tighter">{p.id}</p>
-                </div>
+            {isLoadingQuestions && perguntas.length === 0 ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-16 bg-zinc-800/50 animate-pulse border border-zinc-800" />
+                ))}
               </div>
-            ))}
+            ) : (
+              perguntasFiltradas.map((p, index) => (
+                <div 
+                  key={p.id}
+                  ref={index === perguntasFiltradas.length - 1 ? lastQuestionElementRef : null}
+                  onClick={() => toggleSelecao(p.id)}
+                  className={`p-4 rounded-none border transition-all cursor-pointer group flex items-center gap-4
+                    ${selecionadas.includes(p.id) ? 'bg-blue-600/10 border-blue-600' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600'}`}
+                >
+                  <div className={`w-4 h-4 rounded-none border flex items-center justify-center transition-all
+                    ${selecionadas.includes(p.id) ? 'bg-blue-600 border-blue-600' : 'bg-zinc-900 border-zinc-800'}`}>
+                    {selecionadas.includes(p.id) && <Check size={10} strokeWidth={4} />}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-[11px] font-bold truncate text-zinc-200 group-hover:text-white">{p.label}</p>
+                    <p className="text-[9px] text-zinc-600 font-mono mt-1 uppercase tracking-tighter">{p.id}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            {isFetchingMoreQuestions && <div className="text-[9px] text-center p-2 text-zinc-500 animate-pulse font-bold uppercase">Carregando mais...</div>}
+            
+            {!isLoadingQuestions && perguntas.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Nenhuma questão encontrada</p>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -437,6 +496,12 @@ export default function App() {
                   onUpdate={(id, newData) => {
                     updateNodeData(id, newData);
                     setSelectedNode(prev => ({ ...prev, data: newData }));
+                    // Atualiza o array de perguntas com o novo status
+                    if (selectedNode.type === 'perguntaNode' && newData.status) {
+                      setPerguntas(prev => prev.map(p => 
+                        p.id === selectedNode.data.id ? { ...p, status: newData.status } : p
+                      ));
+                    }
                   }} 
                   onDelete={deleteNode} 
                   onClose={() => setSelectedNode(null)} 
@@ -458,40 +523,12 @@ export default function App() {
 
           {/* Search Modal */}
           <AnimatePresence>
-            {isSearchModalOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-zinc-950 border border-zinc-800 rounded-none w-full max-w-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[85vh]"
-                >
-                  <div className="flex justify-between items-center p-8 border-b border-zinc-900 bg-zinc-900/50">
-                    <div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tighter">Selecionar Contexto</h2>
-                      <p className="text-[10px] text-zinc-500 font-bold tracking-[0.2em] uppercase mt-2">Escolha um questionário para editar</p>
-                    </div>
-                    <button onClick={() => setIsSearchModalOpen(false)} className="text-zinc-600 hover:text-white p-2 transition-all">
-                      <X size={24} />
-                    </button>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
-                    {searchResults.map(q => (
-                      <div 
-                        key={q.id} 
-                        onClick={() => carregarFluxoQuestionario(q)}
-                        className="p-5 bg-zinc-900/30 border border-zinc-800 rounded-none cursor-pointer hover:bg-blue-600/5 hover:border-blue-600 transition-all flex justify-between items-center group"
-                      >
-                        <div>
-                          <p className="font-black text-sm text-zinc-300 group-hover:text-white transition-all uppercase">{q.nome}</p>
-                          <p className="text-[10px] font-mono text-zinc-600 mt-2 tracking-widest">{q.id}</p>
-                        </div>
-                        <ChevronRight size={18} className="text-zinc-800 group-hover:text-blue-500 transition-all" />
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-            )}
+            <QuestionnaireLookup 
+              isOpen={isSearchModalOpen}
+              onClose={() => setIsSearchModalOpen(false)}
+              onSelect={carregarFluxoQuestionario}
+              initialSearch={busca}
+            />
           </AnimatePresence>
         </main>
       </div>
