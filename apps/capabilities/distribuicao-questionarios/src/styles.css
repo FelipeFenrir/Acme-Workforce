@@ -1,0 +1,22 @@
+.capability-mfe-content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.capability-mfe-content > div {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.capability-mfe-content header {
+  display: none !important;
+}
+
+.capability-mfe-content .min-h-screen {
+  min-height: auto !important;
+}
