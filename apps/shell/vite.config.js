@@ -6,11 +6,7 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
-  // 1. Carrega o .env da raiz do monorepo (subindo dois níveis: apps/seu-app -> raiz)
   const env = loadEnv(mode, path.resolve(__dirname, '../../'), 'VITE_');
-
-  // 2. Identifica qual porta usar baseado no nome da pasta ou em um fallback
-  // Você pode usar uma lógica baseada no nome do app ou uma variável específica
   const port = parseInt(env.VITE_PORT_SHELL) || 9100;
 
   return {
@@ -35,7 +31,14 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true
         }
       },
-      strictPort: true, // Garante que o app falhe se a porta estiver ocupada, evitando conflitos
+      strictPort: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      }
+    },
+    build: {
+      target: 'esnext',
+      minify: false
     },
     test: {
       globals: true,

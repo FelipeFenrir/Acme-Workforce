@@ -1,10 +1,14 @@
-const API_URL = "http://localhost:4000";
+const API_URL_DEV = "http://localhost:4000";
+const API_URL_HOM = "http://localhost:9005";
+const API_URL_PRD = "http://localhost:9005";
 const API_QUESTION_URL = "/api/v1/questions";
 const API_QUIZ_URL = "/api/v1/questionnaires";
 
 // Perfil de execução: dev, hom ou prd
 const APP_ENV = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_ENV) || 'dev';
-console.log(`[SharedData] Active Profile: ${APP_ENV}`);
+// Em dev usa URL absoluta (json-server), em hom/prd usa URL relativa (Vite proxy)
+const API_URL = APP_ENV === 'dev' ? API_URL_DEV : (APP_ENV === 'hom' ? '' : '');
+console.log(`[SharedData] Active Profile: ${APP_ENV}, API: ${API_URL || 'use proxy'}`);
 
 // Gerador simplificado de UUID v7 para rastreabilidade
 const generateUuidV7 = () => {
@@ -25,13 +29,27 @@ export const dataService = {
     if (flowId) headers['x-flow-id'] = flowId;
     return headers;
   },
+  dialogHandler: null,
+  setDialogHandler: function(handler) {
+    this.dialogHandler = handler;
+  },
   requestFallback: async function(operation) {
     if (this.isFallbackActive) return true;
     if (APP_ENV === 'prd') return false;
     if (APP_ENV === 'hom') {
-      const approved = typeof window !== 'undefined' && window.confirm(
-        `⚠️ BACKEND INDISPONÍVEL [PERFIL: HOM]\n\nFalha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`
-      );
+      let approved = false;
+      if (this.dialogHandler) {
+        approved = await this.dialogHandler({
+          title: 'Backend Indisponível',
+          message: `Falha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`,
+          confirmText: 'Ativar Fallback',
+          cancelText: 'Cancelar'
+        });
+      } else if (typeof window !== 'undefined') {
+        approved = window.confirm(
+          `⚠️ BACKEND INDISPONÍVEL [PERFIL: HOM]\n\nFalha ao executar: "${operation}".\n\nDeseja ativar o modo de Fallback (Offline) para continuar?`
+        );
+      }
       if (approved) this.setFallbackActive(true);
       return approved;
     }
