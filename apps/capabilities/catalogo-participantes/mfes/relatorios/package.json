@@ -1,0 +1,18 @@
+{
+  "name": "relatorios",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 9096",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.4"
+  }
+}

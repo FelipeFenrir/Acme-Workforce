@@ -1,22 +1,30 @@
 {
-  "$schema": "https://turbo.build",
+  "$schema": "https://turbo.build/schema.json",
   "globalPassThroughEnv": [
     "VITE_PORT_SHELL",
     "VITE_PORT_QUESTIONS",
     "VITE_PORT_QUESTIONNAIRE",
     "VITE_PORT_ORDER",
+    "VITE_PORT_VALIDATE_QUESTIONNAIRE",
+    "VITE_PORT_CAPABILITY_DISTRIBUICAO_QUESTIONARIOS",
+    "VITE_PORT_CAPABILITY_DISTRIBUICAO_QUESTIONARIOS",
     "VITE_URL_QUESTIONS",
     "VITE_URL_QUESTIONNAIRE",
-    "VITE_URL_ORDER"
+    "VITE_URL_ORDER",
+    "VITE_URL_VALIDATE_QUESTIONNAIRE",
+    "VITE_URL_CAPABILITY_DISTRIBUICAO_QUESTIONARIOS"
   ],
   "tasks": {
     "dev": { 
       "cache": false, 
-      "persistent": true 
+      "persistent": true
     },
     "build": { 
       "outputs": ["dist/**"],
       "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": false
     }
   }
 }

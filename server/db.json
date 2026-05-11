@@ -3,92 +3,170 @@
     {
       "id": "idade_cliente",
       "label": "Qual a idade ?",
-      "codigoVenda": "saude",
+      "salesItemReferenceCode": "saude",
+      "status": "ACTIVE",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "createdAt": "2026-05-06T00:00:00Z",
+      "updatedBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "updatedAt": "2026-05-06T00:00:00Z",
+      "type": "perguntaNode"
+    },
+    {
+      "id": "q_name",
+      "label": "Qual o seu nome completo?",
+      "salesItemReferenceCode": "checkout",
+      "status": "ACTIVE",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "seed_user",
+        "name": "Seed User",
+        "email": "seed.user@acme.com"
+      },
+      "createdAt": "2026-05-07T00:35:10.224Z",
+      "updatedBy": null,
+      "updatedAt": null,
+      "type": "perguntaNode"
+    },
+    {
+      "id": "q_consent",
+      "label": "Você aceita os termos e condições?",
+      "salesItemReferenceCode": "checkout",
+      "status": "ACTIVE",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "seed_user",
+        "name": "Seed User",
+        "email": "seed.user@acme.com"
+      },
+      "createdAt": "2026-05-07T00:35:10.224Z",
+      "updatedBy": null,
+      "updatedAt": null,
+      "type": "perguntaNode"
+    },
+    {
+      "id": "q_age",
+      "label": "Qual a sua idade?",
+      "salesItemReferenceCode": "checkout",
+      "status": "ACTIVE",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "seed_user",
+        "name": "Seed User",
+        "email": "seed.user@acme.com"
+      },
+      "createdAt": "2026-05-07T00:35:10.224Z",
+      "updatedBy": null,
+      "updatedAt": null,
       "type": "perguntaNode"
     }
   ],
   "questionarios": [
     {
       "id": "saude_venda_avulsa",
-      "nome": "Questionario do Saude Avulso",
+      "description": "Questionario do Saude Avulso",
+      "status": "ACTIVE",
+      "channelDistributionId": "C01",
+      "journeyDistributionId": "J01",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "createdAt": "2026-05-06T00:00:00Z",
+      "updatedBy": null,
+      "updatedAt": null,
       "type": "quizNode"
     },
     {
       "id": "vg_venda_avulsa",
-      "nome": "Vida Global Avulso",
+      "description": "Vida Global Avulso",
+      "status": "DRAFT",
+      "channelDistributionId": "C02",
+      "journeyDistributionId": "J02",
+      "createdBy": {
+        "id": "019dff07-5f02-70d4-8680-f8dc34fd5fb9",
+        "referenceCode": "sys-admin",
+        "name": "Administrador",
+        "email": "admin@acme.com"
+      },
+      "createdAt": "2026-05-06T00:00:00Z",
+      "updatedBy": null,
+      "updatedAt": null,
       "type": "quizNode"
-    }
-  ],
-  "vinculos": [
-    {
-      "quizId": "saude_venda_avulsa",
-      "connections": [
-        {
-          "source": "saude_venda_avulsa",
-          "target": "node_idade_cliente_1775922010792_0"
-        }
-      ],
-      "nodeIds": [
-        "saude_venda_avulsa",
-        "idade_cliente"
-      ],
-      "id": 1
     },
     {
-      "quizId": "vg_venda_avulsa",
-      "connections": [
+      "id": "questionnaire_checkout",
+      "description": "Questionario de Checkout",
+      "status": "ACTIVE",
+      "channelDistributionId": "mobile_acmeapp",
+      "journeyDistributionId": "journey_vendaavulsaacme",
+      "configuredQuestions": [
         {
-          "source": "vg_venda_avulsa",
-          "target": "node_idade_cliente_1775922929057_0"
-        }
-      ],
-      "nodeIds": [
-        "vg_venda_avulsa",
-        "idade_cliente"
-      ],
-      "id": 2
-    }
-  ],
-  "layout_designer": [
-    {
-      "quizId": "saude_venda_avulsa",
-      "nodes": [
-        {
-          "id": "saude_venda_avulsa",
-          "position": {
-            "x": 254.66504493033483,
-            "y": -24.098719152068227
-          }
+          "questionId": "q_name",
+          "order": 1,
+          "answerConfiguration": {
+            "type": "TEXT",
+            "attributes": {}
+          },
+          "rootCondition": null,
+          "dependsOnQuestionIds": []
         },
         {
-          "id": "node_idade_cliente_1775922010792_0",
-          "position": {
-            "x": 111.96107832803722,
-            "y": 163.55019112061711
-          }
-        }
-      ],
-      "id": 1
-    },
-    {
-      "quizId": "vg_venda_avulsa",
-      "nodes": [
-        {
-          "id": "vg_venda_avulsa",
-          "position": {
-            "x": 286,
-            "y": 3
-          }
+          "questionId": "q_consent",
+          "order": 2,
+          "answerConfiguration": {
+            "type": "OPTION_LIST",
+            "attributes": {
+              "answerOptions": [
+                {
+                  "value": "sim",
+                  "label": "Sim"
+                },
+                {
+                  "value": "nao",
+                  "label": "Nao"
+                }
+              ]
+            }
+          },
+          "rootCondition": null,
+          "dependsOnQuestionIds": []
         },
         {
-          "id": "node_idade_cliente_1775922929057_0",
-          "position": {
-            "x": 173.51779774681552,
-            "y": 220.48386534235044
-          }
+          "questionId": "q_age",
+          "order": 3,
+          "answerConfiguration": {
+            "type": "NUMBER",
+            "attributes": {
+              "min": 1,
+              "max": 120
+            }
+          },
+          "rootCondition": {
+            "type": "EQUAL",
+            "attributes": {
+              "questionRootCode": "q_consent",
+              "expectedValue": "sim"
+            },
+            "children": []
+          },
+          "dependsOnQuestionIds": [
+            "q_consent"
+          ]
         }
       ],
-      "id": 2
+      "type": "quizNode"
     }
   ]
 }

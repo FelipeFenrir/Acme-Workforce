@@ -1,0 +1,224 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🚀 Start All Apps (npm run dev)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🚧 Start All Apps [HOM] (Confirm Fallback)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "hom"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🚨 Start All Apps [PRD] (No Fallback)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "prd"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Shell (npm run dev:shell)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:shell"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Question (npm run dev:question)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:question"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Questionnaire (npm run dev:questionnaire)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:questionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Order Questionnaire (npm run dev:orderquestionnaire)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:orderquestionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 Start Teste seu Questionário (npm run dev:validatequestionnaire)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev:validatequestionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Question (9101)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:question"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Questionnaire (9102)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:questionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Order Questionnaire (9103)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:orderquestionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Teste seu Questionário (9104)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:validatequestionnaire"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Participantes (9094)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:participantes"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Grupos (9095)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:grupos"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "📦 MFE: Relatórios (9096)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "mfe:relatorios"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🧪 Run All Tests (npm run test)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "test"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "🧪 Vitest: Debug Current File",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": [
+                "node_modules/vitest/vitest.mjs",
+                "run",
+                "${relativeFile}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "🌐 Debug Chrome: Shell",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9100",
+            "webRoot": "${workspaceFolder}/apps/shell"
+        },
+        {
+            "name": "🌐 Debug Chrome: Question",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9101",
+            "webRoot": "${workspaceFolder}/apps/question"
+        },
+        {
+            "name": "🌐 Debug Chrome: Questionnaire",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9102",
+            "webRoot": "${workspaceFolder}/apps/questionnaire"
+        },
+        {
+            "name": "🌐 Debug Chrome: Order Questionnaire",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9103",
+            "webRoot": "${workspaceFolder}/apps/orderquestionnaire"
+        },
+        {
+            "name": "🌐 Debug Chrome: Validate Questionnaire",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:9104",
+            "webRoot": "${workspaceFolder}/apps/capabilities/distribuicao-questionarios/mfes/validatequestionnaire"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Start & Debug Shell",
+            "configurations": ["📦 Start Shell (npm run dev:shell)", "🌐 Debug Chrome: Shell"]
+        },
+        {
+            "name": "Start & Debug Question",
+            "configurations": ["📦 Start Question (npm run dev:question)", "🌐 Debug Chrome: Question"]
+        },
+        {
+            "name": "Start & Debug Questionnaire",
+            "configurations": ["📦 Start Questionnaire (npm run dev:questionnaire)", "🌐 Debug Chrome: Questionnaire"]
+        },
+        {
+            "name": "Start & Debug Order Questionnaire",
+            "configurations": ["📦 Start Order Questionnaire (npm run dev:orderquestionnaire)", "🌐 Debug Chrome: Order Questionnaire"]
+        },
+        {
+            "name": "Start & Debug Validate Questionnaire",
+            "configurations": ["📦 Start Teste seu Questionário (npm run dev:validatequestionnaire)", "🌐 Debug Chrome: Validate Questionnaire"]
+        },
+        {
+            "name": "🚀 Start All Apps [HOM] with MFEs",
+            "configurations": ["🚧 Start All Apps [HOM] (Confirm Fallback)", "📦 MFE: Question (9101)", "📦 MFE: Questionnaire (9102)", "📦 MFE: Order Questionnaire (9103)", "📦 MFE: Validate Questionnaire (9104)", "📦 MFE: Participantes (9094)", "📦 MFE: Grupos (9095)", "📦 MFE: Relatórios (9096)"]
+        }
+    ]
+}

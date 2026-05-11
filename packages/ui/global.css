@@ -1,9 +1,16 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
 
 @theme {
-  --color-zinc-950: #09090b;
-  --color-zinc-900: #18181b;
-  --color-zinc-800: #27272a;
+  --color-zinc-950: #161616; /* Carbon Gray 100 */
+  --color-zinc-900: #262626; /* Carbon Gray 90 */
+  --color-zinc-800: #393939; /* Carbon Gray 80 */
+  --color-zinc-700: #525252; /* Carbon Gray 70 */
+  --color-zinc-500: #8d8d8d; /* Carbon Gray 50 */
+  --color-blue-600: #0f62fe; /* Carbon Blue 60 */
+  --color-blue-500: #4589ff; /* Carbon Blue 50 */
+  --color-emerald-600: #198038; /* Carbon Green 60 */
+  --color-emerald-500: #24a148; /* Carbon Green 50 */
 }
 
 /* Reset e Base */
@@ -12,7 +19,7 @@ html, body, #root {
   background-color: var(--color-zinc-950);
   color: white;
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'IBM Plex Sans', sans-serif;
 }
 
 /* Estilização específica do React Flow para o Draw.io */
