@@ -19,43 +19,8 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Verify package-lock.json
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Files in directory:"
-          ls -la
-          if [ -f package-lock.json ]; then
-            echo "package-lock.json exists"
-            echo "File size: $(wc -c < package-lock.json) bytes"
-            echo "First 5 lines:"
-            head -5 package-lock.json
-          else
-            echo "ERROR: package-lock.json not found!"
-            exit 1
-          fi
-
       - run: npm install
-
-      - name: Cache Turbo
-        uses: actions/cache@v4
-        with:
-          path: ~/.turbo
-          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            turbo-${{ runner.os }}-
 
       - run: npx turbo run test --parallel
 
       - run: npx turbo run build --parallel
-
-      # Optional: upload build artifacts
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            **/dist
-            **/build
-            **/out
-          retention-days: 7
