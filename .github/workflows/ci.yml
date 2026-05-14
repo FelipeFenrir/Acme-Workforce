@@ -30,13 +30,12 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: |
-            **/node_modules
+          path: **/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Debug: list files and lockfile
+      - name: Install dependencies
         run: |
           echo "Current directory: $(pwd)"
           echo "Files in root:"
@@ -45,9 +44,6 @@ jobs:
           ls -la package-lock.json
           echo "package-lock.json content (first 10 lines):"
           head -10 package-lock.json
-
-      - name: Install dependencies
-        run: |
           echo "npm version: $(npm --version)"
           echo "Node version: $(node --version)"
           npm ci --verbose
