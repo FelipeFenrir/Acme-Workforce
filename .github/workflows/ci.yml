@@ -18,22 +18,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
 
-      - run: npm ci
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Cache Turbo
         uses: actions/cache@v4
         with:
           path: ~/.turbo
-          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-turbo-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            turbo-${{ runner.os }}-
+            ${{ runner.os }}-turbo-
 
-      - run: npx turbo run test --parallel
+      - name: Run tests
+        run: npx turbo run test --parallel
 
-      - run: npx turbo run build --parallel
+      - name: Build applications
+        run: npx turbo run build --parallel
 
       # Optional: upload build artifacts
       - name: Upload build artifacts
