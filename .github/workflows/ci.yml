@@ -1,10 +1,5 @@
 name: CI
 
-# define global environment variables
-env:
-  # Optional: you can set a default node version or other vars here
-  NODE_VERSION: 'lts/*'
-
 on:
   push:
     branches: [ "main", "develop" ]
@@ -12,55 +7,33 @@ on:
     branches: [ "main" ]
 
 jobs:
-  setup-test-build:
-    name: Setup, Test, and Build
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 'lts/*'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: **/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+      - run: npm ci
 
-      - name: Install dependencies
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Files in root:"
-          ls -la
-          echo "package-lock.json details:"
-          ls -la package-lock.json
-          echo "package-lock.json content (first 10 lines):"
-          head -10 package-lock.json
-          echo "npm version: $(npm --version)"
-          echo "Node version: $(node --version)"
-          npm ci --verbose
-
-      - name: Setup Turbo cache
+      - name: Cache Turbo
         uses: actions/cache@v4
         with:
           path: ~/.turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('package-lock.json') }}
+          key: turbo-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-turbo-
+            turbo-${{ runner.os }}-
 
-      - name: Run tests
-        run: npx turbo run test --parallel
+      - run: npx turbo run test --parallel
 
-      - name: Build applications
-        run: npx turbo run build --parallel
+      - run: npx turbo run build --parallel
 
       # Optional: upload build artifacts
       - name: Upload build artifacts
