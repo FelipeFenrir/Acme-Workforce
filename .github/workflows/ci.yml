@@ -21,7 +21,7 @@ jobs:
 
       - run: npm install
 
-      - run: npx turbo run test --continue-on-failure
+      - run: npx turbo run test --continue
 
       - run: npx turbo run build --parallel
 
