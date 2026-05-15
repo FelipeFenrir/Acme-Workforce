@@ -21,6 +21,18 @@ jobs:
 
       - run: npm install
 
-      - run: npx turbo run test --parallel
+      - run: npx turbo run test --continue-on-failure
 
       - run: npx turbo run build --parallel
+
+      # Optional: upload build artifacts
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            **/dist
+            **/build
+            **/out
+          retention-days: 7
