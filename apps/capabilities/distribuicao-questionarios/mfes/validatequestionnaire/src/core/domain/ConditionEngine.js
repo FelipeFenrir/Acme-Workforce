@@ -1,4 +1,39 @@
-export const evaluateCondition = (condition, answers = {}) => {
+const OPERATOR_MAP = {
+  NOT_EQUAL: 'NOT_EQUALS',
+  GREATER_THAN_OR_EQUAL: 'GREATER_OR_EQUALS',
+  LESS_THAN_OR_EQUAL: 'LESS_OR_EQUALS',
+};
+
+export const normalizeCondition = (condition) => {
+  if (!condition) return condition;
+
+  if (condition.type === 'EQUAL') {
+    return {
+      ...condition,
+      type: 'SIMPLE',
+      attributes: {
+        ...condition.attributes,
+        operator: 'EQUALS',
+      },
+    };
+  }
+
+  if (condition.type === 'NUMERIC') {
+    return {
+      ...condition,
+      type: 'SIMPLE',
+      attributes: {
+        ...condition.attributes,
+        operator: OPERATOR_MAP[condition.attributes?.operator] || condition.attributes?.operator || 'EQUALS',
+      },
+    };
+  }
+
+  return condition;
+};
+
+export const evaluateCondition = (rawCondition, answers = {}) => {
+  const condition = normalizeCondition(rawCondition);
   if (!condition) return { result: true, visible: true };
 
   if (condition.type === 'SIMPLE') {
@@ -135,10 +170,11 @@ export const validateAnswer = (question, answer, answerConfig) => {
 export const computeVisibility = (questions, answers) => {
   return questions.map(question => {
     const condition = question.rootCondition;
-    if (!condition) return { id: question.id, visible: true };
+    const id = question.questionId || question.id;
+    if (!condition) return { id, visible: true };
 
     const { result } = evaluateCondition(condition, answers);
-    return { id: question.id, visible: result };
+    return { id, visible: result };
   });
 };
 
