@@ -150,6 +150,7 @@ export default function App() {
     const newErrors = {};
 
     configured.forEach(cq => {
+      if (!isQuestionVisible(cq.questionId)) return;
       const pergunta = perguntasData[cq.questionId];
       if (!pergunta) return;
       
@@ -196,7 +197,8 @@ const enviarParaValidacao = async () => {
 
     setIsLoading(true);
     try {
-      const configuredQuestions = quizAtivo.configuredQuestions || [];
+      const configuredQuestions = (quizAtivo.configuredQuestions || [])
+        .filter(cq => isQuestionVisible(cq.questionId));
       
       const answersConvertidos = {};
       configuredQuestions.forEach(cq => {
